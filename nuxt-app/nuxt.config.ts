@@ -16,5 +16,15 @@ export default defineNuxtConfig({
 
   vite: {
     plugins: [tailwindcss()]
+  },
+  
+  nitro: {
+    routeRules: {
+      '/**': {
+        headers: {
+          'Content-Security-Policy': "img-src * 'self' data: http: https:"
+        }
+      }
+    }
   }
 })
