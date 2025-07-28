@@ -126,7 +126,7 @@
       <template #right>
         <UButton 
           variant="ghost" 
-          to="/search" 
+          to="/business" 
           color="blue" 
           trailing-icon="i-heroicons-solid-arrow-right" 
           class="font-roboto"
@@ -278,7 +278,7 @@
         container: 'py-20',
         title: 'font-extrabold text-3xl md:text-4xl text-blue-700 mb-4 text-center font-roboto',
         description: 'text-blue-600/80 text-xl mb-10 text-center max-w-3xl mx-auto font-inter',
-        wrapper: 'max-w-7xl mx-auto'
+        wrapper: 'max-w-7xl mx-auto',
       }"
     >
       <template #right>
@@ -371,10 +371,10 @@
       description="Rejoignez notre plateforme et bénéficiez d'avis authentiques vérifiés par NFC. Augmentez votre visibilité et votre crédibilité auprès de vos clients potentiels."
       variant="solid"
       color="blue"
-      class="bg-gradient-to-r from-blue-700 to-blue-800 text-white shadow-xl"
+      class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-xl"
       :links="[
-        { label: 'Inscrivez votre commerce', to: '/business/register', color: 'white', variant: 'solid', size: 'lg', class: 'shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1' },
-        { label: 'En savoir plus', to: '/business', color: 'white', variant: 'outline', trailingIcon: 'i-heroicons-solid-arrow-right', class: 'hover:bg-white/10 transition-all' }
+        { label: 'Inscrivez votre commerce', to: '/business/register', color: 'white', variant: 'solid', size: 'lg', class: 'bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 border-2 border-white/30 ring-2 ring-white/10' },
+        { label: 'En savoir plus', to: '/business', color: 'white', variant: 'outline', trailingIcon: 'i-heroicons-solid-arrow-right', class: 'hover:bg-blue-500/30 transition-all border border-white/50 hover:border-white' }
       ]"
       :ui="{
         container: 'py-16 px-4',

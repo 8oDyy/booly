@@ -9,8 +9,25 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/icon',
     '@nuxt/image',
-    '@nuxt/ui-pro'
+    '@nuxt/ui-pro',
+    '@nuxtjs/supabase',
+    '@pinia/nuxt'
   ],
+  
+  // Configuration de Supabase pour désactiver la redirection automatique
+  supabase: {
+    // URL et clé explicites pour s'assurer qu'elles sont correctement utilisées
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_KEY,
+    // Désactiver la redirection automatique vers la page de connexion
+    redirect: false,
+    // Ou spécifier les routes qui ne nécessitent pas d'authentification
+    redirectOptions: {
+      login: '/auth/login',
+      callback: '/auth/callback',
+      exclude: ['/', '/about', '/how-it-works', '/faq', '/contact', '/support', '/terms', '/privacy', '/legal', '/auth/register']
+    }
+  },
 
   css: ['~/assets/css/main.css'],
 
@@ -22,7 +39,7 @@ export default defineNuxtConfig({
     routeRules: {
       '/**': {
         headers: {
-          'Content-Security-Policy': "img-src * 'self' data: http: https:"
+          'Content-Security-Policy': "img-src * 'self' data: http: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in http://localhost:* https://localhost:* ws://localhost:* data: blob:"
         }
       }
     }
