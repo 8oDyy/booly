@@ -4,7 +4,7 @@ import { serverSupabaseClient } from '#supabase/server';
 export default defineEventHandler(async (event) => {
   try {
     // Récupérer les données du corps de la requête
-    const { priceId, successUrl, cancelUrl, customerEmail } = await readBody(event);
+    const { priceId, successUrl, cancelUrl, customerEmail, userId } = await readBody(event);
 
     // Vérifier que les données requises sont présentes
     if (!priceId || !successUrl || !cancelUrl) {
@@ -25,9 +25,7 @@ export default defineEventHandler(async (event) => {
     }
     
     // Initialiser Stripe avec la clé secrète
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-06-30.basil' as any
-    });
+    const stripe = new Stripe(stripeSecretKey);
 
     // Créer ou récupérer un client Stripe
     let customer;
@@ -61,7 +59,7 @@ export default defineEventHandler(async (event) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer: customer?.id,
-      client_reference_id: customerEmail, // Pour identifier l'utilisateur après le paiement
+      client_reference_id: userId,
       metadata: {
         priceId
       }

@@ -206,6 +206,10 @@ const searchQuery = ref('')
 // Utiliser le composable pour récupérer les catégories depuis Supabase
 const { categories, loading, error } = useCategories()
 
+// Utiliser le composable pour récupérer les sous-catégories depuis Supabase
+//const { subCategories } = useSubCategories()
+
+
 // Fonctions pour basculer entre les modals
 const switchToLogin = () => {
   isRegisterOpen.value = false
