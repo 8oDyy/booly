@@ -17,7 +17,7 @@ export type Database = {
       businesses: {
         Row: {
           address: string | null
-          category: string | null
+          category_id: string | null
           city: string | null
           country: string | null
           created_at: string | null
@@ -34,7 +34,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          category?: string | null
+          category_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
@@ -51,7 +51,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
-          category?: string | null
+          category_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
@@ -72,6 +72,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_business_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]

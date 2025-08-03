@@ -14,6 +14,13 @@ export default defineNuxtConfig({
     '@pinia/nuxt'
   ],
   
+  runtimeConfig: {
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_KEY,
+    },
+  },
+  
   // Configuration de Supabase pour désactiver la redirection automatique
   supabase: {
     // URL et clé explicites pour s'assurer qu'elles sont correctement utilisées
