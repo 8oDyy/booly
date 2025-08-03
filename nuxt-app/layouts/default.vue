@@ -1,12 +1,12 @@
 <template>
     <UApp class="min-h-screen flex flex-col">
-      <AppHeader />
+      <UiAppHeader />
   
       <main class="flex-grow">
         <NuxtPage />
       </main>
   
-      <AppFooter />
+      <UiAppFooter />
     </UApp>
   </template>
   

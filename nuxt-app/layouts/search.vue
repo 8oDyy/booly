@@ -1,23 +1,18 @@
 <template>
-  <div>
-    <AppHeader />
-    
-    <UDashboardPage>
-      <UDashboardPanel grow>
-        <UDashboardNavbar title="Recherche de restaurants">
-          <template #right>
-            <UDashboardSearchButton />
-          </template>
-        </UDashboardNavbar>
-        
-        <slot />
-      </UDashboardPanel>
-    </UDashboardPage>
-    
-    <AppFooter />
-  </div>
-</template>
+    <UPage>
+      <template #left>
+        <UPageAside>
 
-<script setup>
-// Layout pour les pages de recherche
-</script>
+        </UPageAside>
+      </template>
+      <template #right>
+        <UPageAside>
+
+        </UPageAside>
+      </template>
+      <template #default>
+        <slot />
+      </template>
+    </UPage>
+</template>
+    

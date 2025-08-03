@@ -6,20 +6,71 @@
           <img src="~/assets/logos/logo-checkly.svg" alt="Booly Logo" class="h-8" />
         </NuxtLink>
       </template>
-  
+      
       <!-- Centre avec search bar et dropdown menu -->
       <template #default>
+        <div class="hidden md:flex flex-1 max-w-2xl mx-8">
+          <div class="w-full bg-gray-50 rounded-full border border-gray-200 hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-200">
+            <div class="flex items-center">
+              
+              <!-- Partie catégorie -->
+              <div class="flex items-center pl-4 pr-2 border-r border-gray-200 relative">
+                <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                
+                <div class="relative">
+                  <input
+                    v-model="searchQuery"
+                    @focus="showCategoryDropdown = true"
+                    @blur="hideCategoryDropdown"
+                    @input="filterCategories"
+                    placeholder="Que cherchez-vous ?"
+                    class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 w-48"
+                  />
+                  
+                  <!-- Dropdown catégories -->
+                  <div v-if="showCategoryDropdown && filteredCategories.length" class="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div class="max-h-60 overflow-y-auto">
+                      <button
+                        v-for="category in filteredCategories"
+                        :key="category.id"
+                        @mousedown="selectCategory(category)"
+                        class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <span class="text-sm">{{ category.name }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Partie localisation -->
+              <div class="flex items-center flex-1 pl-2 pr-4">
+                <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <input
+                  v-model="locationQuery"
+                  placeholder="Où ?"
+                  class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 flex-1"
+                />
+              </div>
+              
+              <!-- Bouton de recherche -->
+              <button
+                @click="performSearch"
+                class="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 m-1 transition-colors duration-200"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="hidden md:flex items-center space-x-6 flex-1 justify-center">
-          <!-- Search bar simple -->
-          <UInputGroup>
-            <UInput 
-              v-model="searchQuery" 
-              placeholder="Rechercher un service..." 
-              icon="i-heroicons-magnifying-glass-20-solid"
-              class="w-64"
-            />
-          </UInputGroup>
-          
           <!-- Dropdown menu catégories -->
           <UDropdownMenu :items="categories" :loading="loading">
             <UButton color="neutral" variant="ghost" trailing-icon="i-heroicons-chevron-down-20-solid">
@@ -120,7 +171,7 @@
   <script setup lang="ts">
   import { ref, computed } from 'vue'
   import { navigateTo } from '#imports'
-  import type { FormSubmitEvent } from '@nuxt/ui'
+  import type { FormSubmitEvent, DropdownMenuItem } from '@nuxt/ui'
   import type { LoginSchema, RegisterSchema } from '~/composables/useAuth'
   
   const { 
@@ -140,8 +191,18 @@
   
   const isLoginOpen = ref(false)
   const isRegisterOpen = ref(false)
-  
+
+  // États des menus et modals
+  const showCategoryDropdown = ref(false)
+  const showCategoriesMenu = ref(false)
+  const showUserMenu = ref(false)
+  const showMobileMenu = ref(false)
+  const showLoginModal = ref(false)
+  const showRegisterModal = ref(false)
+
   const searchQuery = ref('')
+  const locationQuery = ref('')
+  const selectedCategory = ref<DropdownMenuItem | null>(null)
   
   const { categories, loading } = useCategories()
   
@@ -173,7 +234,53 @@
     await logout()
     window.location.reload()
   }
+
+  // Catégories filtrées pour la recherche
+  const filteredCategories = computed<DropdownMenuItem[]>(() => {
+    // Créer une copie limitée pour éviter les problèmes de référence profonde
+    const result: DropdownMenuItem[] = [];
+    
+    // Limiter à 5 éléments maximum
+    const maxItems = 5;
+    let count = 0;
+    
+    // Filtrer les catégories en fonction de la recherche
+    if (!searchQuery.value) {
+      // Prendre les 5 premières catégories si pas de recherche
+      for (let i = 0; i < Math.min(categories.value.length, maxItems); i++) {
+        result.push(categories.value[i]);
+      }
+    } else {
+      // Filtrer par recherche
+      for (let i = 0; i < categories.value.length && count < maxItems; i++) {
+        const cat = categories.value[i];
+        if (cat.label && cat.label.toLowerCase().includes(searchQuery.value.toLowerCase())) {
+          result.push(cat);
+          count++;
+        }
+      }
+    }
+    
+    return result;
+  })
   
+  // Méthodes
+  const filterCategories = () => {
+    // La logique de filtrage est dans le computed
+  }
+
+  const hideCategoryDropdown = () => {
+    setTimeout(() => {
+      showCategoryDropdown.value = false
+    }, 200)
+  }
+
+  const selectCategory = (category: DropdownMenuItem) => {
+    selectedCategory.value = category
+    searchQuery.value = category.label || ''
+    showCategoryDropdown.value = false
+  }
+
   const userMenuItems = computed(() => [
     {
       label: 'Mon profil',
@@ -212,4 +319,25 @@
       loginWithGithub()
     }
   }]
+
+  const performSearch = () => {
+  const query = new URLSearchParams()
+  
+  if (selectedCategory.value && selectedCategory.value.to) {
+    // Extraire l'ID de catégorie de l'URL 'to'
+    const categoryPath = selectedCategory.value.to.toString().split('/')
+    const categoryId = categoryPath[categoryPath.length - 1]
+    query.set('category', categoryId)
+  } else if (searchQuery.value) {
+    query.set('query', searchQuery.value)
+  }
+  
+  if (locationQuery.value) {
+    query.set('location', locationQuery.value)
+  }
+  
+  // Navigation vers la page de résultats
+  navigateTo(`/?${query.toString()}`)
+}
+
   </script>

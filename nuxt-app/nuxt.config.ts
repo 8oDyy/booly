@@ -18,6 +18,7 @@ export default defineNuxtConfig({
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
     },
   },
   
@@ -46,7 +47,14 @@ export default defineNuxtConfig({
     routeRules: {
       '/**': {
         headers: {
-          'Content-Security-Policy': "img-src * 'self' data: http: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in http://localhost:* https://localhost:* ws://localhost:* data: blob:"
+          'Content-Security-Policy': [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com",
+            "style-src  'self' 'unsafe-inline'",
+            "img-src    'self' data: blob: https://maps.gstatic.com https://maps.googleapis.com",
+            // ─── I C I  :  + Iconify ────────────────
+            "connect-src 'self' https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com https://api.iconify.design",
+          ].join('; ')
         }
       }
     }

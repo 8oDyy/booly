@@ -55,17 +55,17 @@
     {
       label: 'Ressources',
       children: [
-        { label: 'À propos', to: '/about' },
-        { label: 'Comment ça marche', to: '/how-it-works' },
-        { label: 'Pour les professionnels', to: '/business' }
+        { label: 'À propos', to: 'footer_link/about' },
+        { label: 'Comment ça marche', to: 'footer_link/how_it_works' },
+        { label: 'Pour les professionnels', to: 'footer_link/business' }
       ]
     },
     {
       label: 'Aide',
       children: [
-        { label: 'FAQ', to: '/faq' },
-        { label: 'Contact', to: '/contact' },
-        { label: 'Support', to: '/support' }
+        { label: 'FAQ', to: 'footer_link/faq' },
+        { label: 'Contact', to: 'footer_link/contact' },
+        { label: 'Support', to: 'footer_link/support' }
       ]
     }
   ]
