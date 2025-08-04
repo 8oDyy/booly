@@ -92,6 +92,7 @@ import { navigateTo } from '#app'
 
 
 // Meta
+
 useHead({
   title: 'Resultat de votre recherche - Booly',
   meta: [
@@ -104,9 +105,6 @@ const value = ref('Recommandations')
 
 // Composables
 const { searchBusinesses, getCategories, getCities } = useBusinesses()
-
-// Récupérer les paramètres de l'URL
-const route = useRoute()
 
 // État de la recherche
 const searchQuery = ref('')
@@ -211,53 +209,7 @@ const performSearch = async () => {
   }
 }
 
-// Surveiller les changements de page et relancer la recherche
-watch(currentPage, async (newPage, oldPage) => {
-  console.log('📄 Changement de page détecté:', newPage, 'Ancienne page:', oldPage)
-  
-  if (newPage === oldPage) {
-    console.log('⚠️ Même page, pas de changement nécessaire')
-    return
-  }
-  
-  console.log('📄 Lancement de la recherche pour la page:', newPage)
-  
-  // Attendre que la réactivité se propage
-  await nextTick()
-  
-  // Relancer la recherche avec la nouvelle page
-  await performSearch()
-  
-  // Scroll vers le haut après changement de page
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-})
 
-// Surveiller les changements de paramètres dans l'URL et relancer la recherche
-watch(() => route.query, async (newQuery, oldQuery) => {
-  console.log('🔄 Changement de paramètres URL détecté:', newQuery, 'Anciens paramètres:', oldQuery)
-  
-  // Vérifier si les paramètres ont réellement changé
-  const hasChanged = ['query', 'category', 'location'].some(param => newQuery[param] !== oldQuery[param])
-  
-  if (!hasChanged) {
-    console.log('⚠️ Mêmes paramètres, pas de changement nécessaire')
-    return
-  }
-  
-  console.log('🔄 Mise à jour des filtres et relance de la recherche')
-  
-  // Réinitialiser la page à 1 lors d'un changement de filtres
-  currentPage.value = 1
-  
-  // Mettre à jour les filtres à partir des nouveaux paramètres URL
-  initializeFiltersFromUrl()
-  
-  // Attendre que la réactivité se propage
-  await nextTick()
-  
-  // Relancer la recherche avec les nouveaux filtres
-  await performSearch()
-}, { deep: true })
 
 const clearFilters = () => {
   searchQuery.value = ''
@@ -281,29 +233,16 @@ const handleBusinessSelected = (business) => {
   goToBusiness(business.id)
 }
 
+// Récupérer les paramètres de l'URL
+const route = useRoute()
+
 // Fonction pour initialiser les filtres à partir des paramètres d'URL
 const initializeFiltersFromUrl = () => {
-  // Récupérer les paramètres de l'URL
-  const queryParam = route.query.query
-  const categoryParam = route.query.category
-  const locationParam = route.query.location
-  
-  console.log('📝 Paramètres URL détectés:', { query: queryParam, category: categoryParam, location: locationParam })
-  
-  // Appliquer les paramètres aux filtres
-  if (queryParam) {
-    searchQuery.value = queryParam
-  }
-  
-  if (locationParam) {
-    locationQuery.value = locationParam
-  }
-  
-  // Pour la catégorie, on doit attendre que les catégories soient chargées
-  if (categoryParam) {
-    // On stocke temporairement l'ID de catégorie pour l'appliquer après chargement
-    selectedCategoryId.value = categoryParam
-  }
+  const { query, category, location } = route.query
+
+  searchQuery.value = typeof query === 'string' ? query : ''
+  selectedCategoryId.value = typeof category === 'string' ? category : ''
+  locationQuery.value = typeof location === 'string' ? location : ''
 }
 
 // Charger les données initiales
@@ -331,6 +270,23 @@ onMounted(async () => {
     isInitialLoad.value = false
   }
 })
+
+// Surveiller les changements de page et relancer la recherche
+watch(() => route.query, async (newQuery, oldQuery) => {
+  console.log('🔁 Changement dans les paramètres d’URL détecté:', newQuery)
+
+  const hasChanged = ['query', 'category', 'location'].some(param => newQuery[param] !== oldQuery[param])
+  if (!hasChanged) {
+    console.log('ℹ️ Aucun changement significatif détecté dans les paramètres.')
+    return
+  }
+
+  currentPage.value = 1
+  initializeFiltersFromUrl()
+  await nextTick()
+  await performSearch()
+})
+
 </script>
 
 <style scoped>

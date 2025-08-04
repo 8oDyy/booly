@@ -42,26 +42,25 @@
           
           <!-- TODO: Ajouter les champs opening_hours à la table businesses -->
           <UBadge 
-            :color="isOpenNow ? 'success' : 'error'" 
+            :color="status.open ? 'success' : 'error'" 
             variant="subtle"
             size="xs"
           >
-            {{ isOpenNow ? 'Ouvert' : 'Fermé' }}
+            {{ status.open ? 'Ouvert' : 'Fermé' }}
           </UBadge>
-          
+
           <span class="text-xs text-gray-500 dark:text-gray-400">
-            <!-- TODO: Implémenter la logique d'horaires -->
-            Horaires à définir
+            {{ status.message }}
           </span>
         </div>
         
         <!-- Description ou dernier commentaire -->
         <div class="mb-3">
           <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-            {{ business.description || lastReviewContent || 'Aucune description disponible' }}
+            {{ business.last_review_content || 'Aucune description disponible' }}
           </p>
-          <p v-if="lastReview" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            - {{ lastReview.profiles?.full_name || 'Anonyme' }}, {{ formatDate(lastReview.created_at) }}
+          <p v-if="business.last_review_date" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            - {{ business.last_review_author || 'Anonyme' }}, {{ formatDate(business.last_review_date) }}
           </p>
         </div>
         
@@ -102,6 +101,8 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const status = computed(() => getOpeningStatus(props.business.opening_hours || []))
+
 // Photo de couverture (première photo ou placeholder)
 const coverPhoto = computed(() => {
   return props.business.photos?.[0]?.url || null
@@ -110,16 +111,6 @@ const coverPhoto = computed(() => {
 // Note moyenne
 const avgRating = computed(() => {
   return props.business.avg_rating || 0
-})
-
-// Dernier avis
-const lastReview = computed(() => {
-  const reviews = props.business.reviews || []
-  return reviews.length > 0 ? reviews[0] : null
-})
-
-const lastReviewContent = computed(() => {
-  return lastReview.value?.content || null
 })
 
 // TODO: Implémenter la logique d'horaires avec les vraies données
@@ -148,6 +139,9 @@ const formatDate = (dateString: string | null) => {
   if (diffDays < 30) return `il y a ${Math.ceil(diffDays / 7)} semaines`
   return `il y a ${Math.ceil(diffDays / 30)} mois`
 }
+
+console.log('Horaires pour', props.business.name, props.business.opening_hours)
+
 </script>
 
 <style scoped>

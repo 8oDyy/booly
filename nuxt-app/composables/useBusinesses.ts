@@ -29,6 +29,9 @@ type BusinessWithReviews = Business & {
   category?: { id: string; name: string; slug: string }
   avg_rating?: number
   review_count?: number
+  last_review_content?: string | null
+  last_review_date?: string | null
+  last_review_author?: string | null
 }
 
 interface SearchFilters {
@@ -39,8 +42,7 @@ interface SearchFilters {
   maxDistance?: number
   sortBy?: "name" | "rating" | "distance" | "created_at"
   sortOrder?: "asc" | "desc"
-  // TODO: Ajouter ces champs à la table businesses
-  priceRange?: number[]
+  priceRange?: string[]
   services?: string[]
   openNow?: boolean
 }
@@ -48,9 +50,8 @@ interface SearchFilters {
 /* -------------------------------------------------------------------------- */
 
 export const useBusinesses = () => {
-  /* --------------------------- Supabase client --------------------------- */
   const config = useRuntimeConfig()
-  
+
   if (!config.public.supabaseUrl || !config.public.supabaseKey) {
     console.error('Configuration Supabase manquante!')
     throw new Error('Configuration Supabase manquante')
@@ -61,9 +62,6 @@ export const useBusinesses = () => {
     config.public.supabaseKey
   )
 
-  /* -------------------------------- Helpers ----------------------------- */
-
-  /** Formule de Haversine (km) */
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371
     const toRad = (deg: number) => (deg * Math.PI) / 180
@@ -75,15 +73,8 @@ export const useBusinesses = () => {
     return 2 * R * Math.asin(Math.sqrt(a))
   }
 
-  /* ---------------------------------------------------------------------- */
-  /*                              Core methods                              */
-  /* ---------------------------------------------------------------------- */
-
-  /** Recherche paginée avec filtres */
   const searchBusinesses = async (filters: SearchFilters = {}, page = 1, limit = 10) => {
     try {
-      console.log('Début de la recherche avec filtres:', filters)
-      
       let query = supabase.from("businesses").select(
         `
           *,
@@ -105,12 +96,22 @@ export const useBusinesses = () => {
           photos (
             url,
             description
+          ),
+          opening_hours (
+            day_of_week,
+            opening_times
+          ),
+          last_reviews!left(
+            content,
+            created_at,
+            profiles!last_reviews_user_id_fkey (
+              full_name
+            )
           )
         `,
-        { count: "exact" },
+        { count: "exact" }
       )
 
-      /* --- filtres textuels --- */
       if (filters.query) {
         query = query.or(`name.ilike.%${filters.query}%,description.ilike.%${filters.query}%`)
       }
@@ -122,28 +123,23 @@ export const useBusinesses = () => {
       if (filters.categoryId) {
         query = query.eq("category_id", filters.categoryId)
       }
+      
 
-      /* --- tri --- */
       const sortBy = filters.sortBy ?? "created_at"
       const sortOrder = filters.sortOrder ?? "desc"
       query = query.order(sortBy, { ascending: sortOrder === "asc" })
 
-      /* --- pagination --- */
       const from = (page - 1) * limit
       const to = from + limit - 1
       query = query.range(from, to)
 
-      /* --- exécution --- */
       const { data, error, count } = await query
-      
+
       if (error) {
         console.error('Erreur Supabase lors de la recherche:', error)
         throw error
       }
 
-      console.log('Données brutes de Supabase:', data)
-      
-      /* --- post-traitement --- */
       const list: BusinessWithReviews[] = (data ?? []).map((b) => {
         const reviews = b.reviews ?? []
         const avg =
@@ -158,14 +154,14 @@ export const useBusinesses = () => {
           category: (b as any).category ?? undefined,
           avg_rating: Math.round(avg * 10) / 10,
           review_count: reviews.length,
+          last_review_content: (b as any).last_reviews?.content ?? null,
+          last_review_date: (b as any).last_reviews?.created_at ?? null,
+          last_review_author: (b as any).last_reviews?.profiles?.full_name ?? 'Anonyme',
         }
       })
 
-      /* --- filtre minRating côté client --- */
       const filtered = filters.minRating ? list.filter((b) => (b.avg_rating ?? 0) >= filters.minRating!) : list
 
-      console.log('Données formatées:', filtered)
-      
       return {
         data: filtered,
         count: count ?? 0,
@@ -185,7 +181,6 @@ export const useBusinesses = () => {
     }
   }
 
-  /** Détails d'un business */
   const getBusinessById = async (id: string) => {
     try {
       const { data, error } = await supabase
@@ -206,7 +201,18 @@ export const useBusinesses = () => {
               avatar_url
             )
           ),
-          photos ( * )
+          photos ( * ),
+          last_reviews!left(
+            content,
+            created_at,
+            profiles!last_reviews_user_id_fkey (
+              full_name
+            )
+          ),
+          opening_hours (
+            day_of_week,
+            opening_times
+          )
         `,
         )
         .eq("id", id)
@@ -216,7 +222,7 @@ export const useBusinesses = () => {
         console.error('Erreur lors de la récupération du business:', error)
         throw error
       }
-      
+
       return data
     } catch (error) {
       console.error('Erreur dans getBusinessById:', error)
@@ -224,22 +230,18 @@ export const useBusinesses = () => {
     }
   }
 
-  /** Liste des catégories */
   const getCategories = async () => {
     try {
-      console.log('Récupération des catégories...')
-      
       const { data, error } = await supabase
         .from("categories")
         .select("id, name, slug")
         .order("name")
-      
+
       if (error) {
         console.error('Erreur lors de la récupération des catégories:', error)
         return []
       }
-      
-      console.log('Catégories récupérées:', data)
+
       return data ?? []
     } catch (error) {
       console.error('Erreur dans getCategories:', error)
@@ -247,11 +249,8 @@ export const useBusinesses = () => {
     }
   }
 
-  /** Villes distinctes présentes en base */
   const getCities = async () => {
     try {
-      console.log('Récupération des villes...')
-      
       const { data, error } = await supabase
         .from("businesses")
         .select("city")
@@ -263,15 +262,12 @@ export const useBusinesses = () => {
       }
 
       const cities = [...new Set(data?.map((d) => d.city).filter(Boolean))].sort()
-      console.log('Villes récupérées:', cities)
       return cities
     } catch (error) {
       console.error('Erreur dans getCities:', error)
       return []
     }
   }
-
-  /* ---------------------------------------------------------------------- */
 
   return {
     searchBusinesses,

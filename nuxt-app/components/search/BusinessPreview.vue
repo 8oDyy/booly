@@ -11,7 +11,7 @@
         <!-- Photo de couverture -->
         <div class="preview-image">
           <img 
-            :src="coverPhoto || '/placeholder.svg?height=80&width=120'"
+            :src="coverPhoto || 'https://via.placeholder.com/300x200'"
             :alt="business.name"
             class="w-full h-20 object-cover"
           />
