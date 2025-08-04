@@ -105,6 +105,9 @@ const value = ref('Recommandations')
 // Composables
 const { searchBusinesses, getCategories, getCities } = useBusinesses()
 
+// Récupérer les paramètres de l'URL
+const route = useRoute()
+
 // État de la recherche
 const searchQuery = ref('')
 const locationQuery = ref('')
@@ -229,6 +232,33 @@ watch(currentPage, async (newPage, oldPage) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 })
 
+// Surveiller les changements de paramètres dans l'URL et relancer la recherche
+watch(() => route.query, async (newQuery, oldQuery) => {
+  console.log('🔄 Changement de paramètres URL détecté:', newQuery, 'Anciens paramètres:', oldQuery)
+  
+  // Vérifier si les paramètres ont réellement changé
+  const hasChanged = ['query', 'category', 'location'].some(param => newQuery[param] !== oldQuery[param])
+  
+  if (!hasChanged) {
+    console.log('⚠️ Mêmes paramètres, pas de changement nécessaire')
+    return
+  }
+  
+  console.log('🔄 Mise à jour des filtres et relance de la recherche')
+  
+  // Réinitialiser la page à 1 lors d'un changement de filtres
+  currentPage.value = 1
+  
+  // Mettre à jour les filtres à partir des nouveaux paramètres URL
+  initializeFiltersFromUrl()
+  
+  // Attendre que la réactivité se propage
+  await nextTick()
+  
+  // Relancer la recherche avec les nouveaux filtres
+  await performSearch()
+}, { deep: true })
+
 const clearFilters = () => {
   searchQuery.value = ''
   locationQuery.value = ''
@@ -251,6 +281,31 @@ const handleBusinessSelected = (business) => {
   goToBusiness(business.id)
 }
 
+// Fonction pour initialiser les filtres à partir des paramètres d'URL
+const initializeFiltersFromUrl = () => {
+  // Récupérer les paramètres de l'URL
+  const queryParam = route.query.query
+  const categoryParam = route.query.category
+  const locationParam = route.query.location
+  
+  console.log('📝 Paramètres URL détectés:', { query: queryParam, category: categoryParam, location: locationParam })
+  
+  // Appliquer les paramètres aux filtres
+  if (queryParam) {
+    searchQuery.value = queryParam
+  }
+  
+  if (locationParam) {
+    locationQuery.value = locationParam
+  }
+  
+  // Pour la catégorie, on doit attendre que les catégories soient chargées
+  if (categoryParam) {
+    // On stocke temporairement l'ID de catégorie pour l'appliquer après chargement
+    selectedCategoryId.value = categoryParam
+  }
+}
+
 // Charger les données initiales
 onMounted(async () => {
   console.log('🚀 Chargement des données initiales...')
@@ -266,7 +321,10 @@ onMounted(async () => {
     cities.value = citiesResult || []
     console.log('🏙️ Villes chargées:', cities.value)
     
-    // Recherche initiale
+    // Initialiser les filtres à partir des paramètres d'URL
+    initializeFiltersFromUrl()
+    
+    // Recherche initiale avec les filtres appliqués
     await performSearch()
   } catch (error) {
     console.error('❌ Erreur lors du chargement initial:', error)
