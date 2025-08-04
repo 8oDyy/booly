@@ -363,6 +363,12 @@
   
   const setMinRating = (rating) => {
     selectedRating.value = selectedRating.value === rating ? 0 : rating
+    
+    // Émettre l'événement update:filters avec la note sélectionnée
+    emit('update:filters', {
+      rating: selectedRating.value
+    })
+    console.log('🔍 Événement update:filters émis avec rating:', { rating: selectedRating.value })
   }
   
   const toggleQuickFilter = (filter) => {

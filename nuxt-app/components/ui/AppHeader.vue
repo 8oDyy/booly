@@ -31,7 +31,7 @@
                 />
                 
                 <!-- Dropdown catégories -->
-                <div v-if="showCategoryDropdown && filteredCategories.length" class="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div v-if="showCategoryDropdown && filteredCategories.length" class="font-black absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                   <div class="max-h-60 overflow-y-auto">
                     <button
                       v-for="category in filteredCategories"

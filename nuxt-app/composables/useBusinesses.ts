@@ -129,6 +129,10 @@ export const useBusinesses = () => {
         query = query.in("price", filters.priceRange)
       }
       
+      // Appliquer le filtre de note minimale côté serveur avec la colonne average_rating
+      if (filters.minRating && filters.minRating > 0) {
+        query = query.gte('average_rating', filters.minRating)
+      }
 
       const sortBy = filters.sortBy ?? "created_at"
       const sortOrder = filters.sortOrder ?? "desc"
@@ -165,10 +169,11 @@ export const useBusinesses = () => {
         }
       })
 
-      const filtered = filters.minRating ? list.filter((b) => (b.avg_rating ?? 0) >= filters.minRating!) : list
-
+      // Le filtrage par note minimale est maintenant appliqué côté serveur via average_rating
+      // Pas besoin de filtrage supplémentaire côté client
+      
       return {
-        data: filtered,
+        data: list,
         count: count ?? 0,
         page,
         limit,

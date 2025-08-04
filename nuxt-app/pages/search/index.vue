@@ -218,6 +218,7 @@ const performSearch = async () => {
 const updateUrlParams = () => {
   console.log('🔍 updateUrlParams - Début de la fonction')
   console.log('🔍 updateUrlParams - Prix sélectionnés:', selectedPrices.value)
+  console.log('🔍 updateUrlParams - Note minimale:', minRating.value)
   
   const query = new URLSearchParams()
   
@@ -237,6 +238,12 @@ const updateUrlParams = () => {
   if (selectedPrices.value.length > 0) {
     query.set('prices', selectedPrices.value.join(','))
     console.log('🔍 updateUrlParams - Ajout des prix à l\'URL:', selectedPrices.value.join(','))
+  }
+  
+  // Ajouter la note minimale à l'URL
+  if (minRating.value > 0) {
+    query.set('rating', minRating.value.toString())
+    console.log('🔍 updateUrlParams - Ajout de la note minimale à l\'URL:', minRating.value)
   }
   
   // Mettre à jour l'URL sans recharger la page
@@ -271,6 +278,12 @@ const handleFiltersUpdate = (newFilters) => {
     selectedPrices.value = Array.from(newFilters.prices)
   }
   
+  // Mise à jour de la note minimale
+  if (newFilters.rating !== undefined) {
+    console.log('🔍 Mise à jour de la note minimale:', newFilters.rating)
+    minRating.value = newFilters.rating
+  }
+  
   // Réinitialiser la page courante
   currentPage.value = 1
   
@@ -295,18 +308,28 @@ const route = useRoute()
 
 // Fonction pour initialiser les filtres à partir des paramètres d'URL
 const initializeFiltersFromUrl = () => {
-  const { query, category, location } = route.query
+  const { query, category, location, rating } = route.query
 
   searchQuery.value = typeof query === 'string' ? query : ''
   selectedCategoryId.value = typeof category === 'string' ? category : ''
   locationQuery.value = typeof location === 'string' ? location : ''
 
+  // Initialiser les prix sélectionnés depuis l'URL
   const priceParam = route.query.prices
   if (priceParam) {
     selectedPrices.value = String(priceParam)
       .split(',')
       .map((p) => parseInt(p))
       .filter((p) => !isNaN(p))
+  }
+  
+  // Initialiser la note minimale depuis l'URL
+  if (rating) {
+    const ratingValue = parseInt(String(rating))
+    if (!isNaN(ratingValue) && ratingValue >= 0 && ratingValue <= 5) {
+      minRating.value = ratingValue
+      console.log('🔍 Note minimale initialisée depuis URL:', minRating.value)
+    }
   }
 }
 
@@ -338,14 +361,15 @@ onMounted(async () => {
 
 // Surveiller les changements de page et relancer la recherche
 watch(() => route.query, async (newQuery, oldQuery) => {
-  console.log('🔁 Changement dans les paramètres d’URL détecté:', newQuery)
+  console.log('🔁 Changement dans les paramètres d\'URL détecté:', newQuery)
 
-  const hasChanged = ['query', 'category', 'location'].some(param => newQuery[param] !== oldQuery[param])
+  const hasChanged = ['query', 'category', 'location', 'rating', 'prices'].some(param => newQuery[param] !== oldQuery[param])
   if (!hasChanged) {
     console.log('ℹ️ Aucun changement significatif détecté dans les paramètres.')
     return
   }
 
+  console.log('🔍 Changements détectés dans les paramètres, mise à jour des filtres...')
   currentPage.value = 1
   initializeFiltersFromUrl()
   await nextTick()
