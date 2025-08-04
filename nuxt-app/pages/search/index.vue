@@ -3,7 +3,9 @@
     <!-- Sidebar gauche avec filtres -->
     <template #left>
       <UPageAside class="filters-aside">
-        <SearchFilters />
+        <SearchFilters
+          @update:filters="handleFiltersUpdate"
+        />
       </UPageAside>
     </template>
 
@@ -187,7 +189,8 @@ const performSearch = async () => {
       categoryId: selectedCategoryId.value || undefined,
       minRating: minRating.value > 0 ? minRating.value : undefined,
       sortBy: sortBy.value,
-      sortOrder: 'desc'
+      sortOrder: 'desc',
+      priceRange: selectedPrices.value.length > 0 ? selectedPrices.value : undefined
     }
 
     console.log('🔍 Recherche avec filtres:', filters, 'Page:', currentPage.value)
@@ -211,6 +214,38 @@ const performSearch = async () => {
 
 
 
+// Fonction pour mettre à jour les paramètres d'URL
+const updateUrlParams = () => {
+  console.log('🔍 updateUrlParams - Début de la fonction')
+  console.log('🔍 updateUrlParams - Prix sélectionnés:', selectedPrices.value)
+  
+  const query = new URLSearchParams()
+  
+  if (searchQuery.value) {
+    query.set('query', searchQuery.value)
+  }
+  
+  if (selectedCategoryId.value) {
+    query.set('category', selectedCategoryId.value)
+  }
+  
+  if (locationQuery.value) {
+    query.set('location', locationQuery.value)
+  }
+  
+  // Ajouter les prix sélectionnés à l'URL
+  if (selectedPrices.value.length > 0) {
+    query.set('prices', selectedPrices.value.join(','))
+    console.log('🔍 updateUrlParams - Ajout des prix à l\'URL:', selectedPrices.value.join(','))
+  }
+  
+  // Mettre à jour l'URL sans recharger la page
+  const newPath = `/search${query.toString() ? `?${query.toString()}` : ''}`
+  console.log('🔍 updateUrlParams - Nouveau chemin:', newPath)
+  navigateTo(newPath, { replace: true })
+  console.log('🔍 updateUrlParams - Navigation effectuée')
+}
+
 const clearFilters = () => {
   searchQuery.value = ''
   locationQuery.value = ''
@@ -221,7 +256,29 @@ const clearFilters = () => {
   selectedServices.value = []
   openNow.value = false
   currentPage.value = 1
+  updateUrlParams()
   performSearch()
+}
+
+// Fonction pour gérer la mise à jour des filtres
+const handleFiltersUpdate = (newFilters) => {
+  console.log('🔍 handleFiltersUpdate appelé avec:', newFilters)
+  
+  // Mise à jour des prix sélectionnés
+  if (newFilters.prices) {
+    console.log('🔍 Mise à jour des prix sélectionnés:', newFilters.prices)
+    // Créer un nouveau tableau pour éviter les problèmes de référence
+    selectedPrices.value = Array.from(newFilters.prices)
+  }
+  
+  // Réinitialiser la page courante
+  currentPage.value = 1
+  
+  // Mettre à jour l'URL et lancer la recherche
+  console.log('🔍 Appel de updateUrlParams...')
+  updateUrlParams()
+  console.log('🔍 Appel de debouncedSearch...')
+  debouncedSearch()
 }
 
 const goToBusiness = (id) => {
@@ -243,6 +300,14 @@ const initializeFiltersFromUrl = () => {
   searchQuery.value = typeof query === 'string' ? query : ''
   selectedCategoryId.value = typeof category === 'string' ? category : ''
   locationQuery.value = typeof location === 'string' ? location : ''
+
+  const priceParam = route.query.prices
+  if (priceParam) {
+    selectedPrices.value = String(priceParam)
+      .split(',')
+      .map((p) => parseInt(p))
+      .filter((p) => !isNaN(p))
+  }
 }
 
 // Charger les données initiales

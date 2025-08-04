@@ -337,13 +337,19 @@
   const visibleTags = computed(() => popularTags)
   
   // Méthodes
-  const togglePrice = (price) => {
-    const index = selectedPrices.value.indexOf(price)
-    if (index > -1) {
-      selectedPrices.value.splice(index, 1)
-    } else {
-      selectedPrices.value.push(price)
-    }
+  const togglePrice = (value) => {
+    console.log('🔍 togglePrice appelé avec:', value)
+    const alreadySelected = selectedPrices.value.includes(value)
+    selectedPrices.value = alreadySelected
+      ? selectedPrices.value.filter((p) => p !== value)
+      : [...selectedPrices.value, value]
+
+    console.log('🔍 selectedPrices après mise à jour:', selectedPrices.value)
+    
+    emit('update:filters', {
+      prices: [...selectedPrices.value]
+    })
+    console.log('🔍 Événement update:filters émis avec:', { prices: [...selectedPrices.value] })
   }
   
   const toggleTag = (tagId) => {
@@ -362,6 +368,16 @@
   const toggleQuickFilter = (filter) => {
     quickFilters.value[filter] = !quickFilters.value[filter]
   }
+
+  const togglePriceRange = (priceRange) => {
+    const index = selectedPrices.value.indexOf(priceRange)
+    if (index > -1) {
+      selectedPrices.value.splice(index, 1)
+    } else {
+      selectedPrices.value.push(priceRange)
+    }
+  }
+
   
   const openTagsModal = () => {
     isTagsModalOpen.value = true

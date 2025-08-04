@@ -45,6 +45,7 @@ interface SearchFilters {
   priceRange?: string[]
   services?: string[]
   openNow?: boolean
+  price_range?: number[]
 }
 
 /* -------------------------------------------------------------------------- */
@@ -122,6 +123,10 @@ export const useBusinesses = () => {
 
       if (filters.categoryId) {
         query = query.eq("category_id", filters.categoryId)
+      }
+
+      if (filters.priceRange) {
+        query = query.in("price", filters.priceRange)
       }
       
 
