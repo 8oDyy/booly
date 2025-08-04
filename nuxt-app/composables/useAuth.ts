@@ -1,5 +1,6 @@
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { useSupabaseClient, useSupabaseUser } from '#imports'
 
 // Schéma de validation pour la connexion
 export const loginSchema = z.object({

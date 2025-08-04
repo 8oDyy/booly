@@ -72,67 +72,45 @@
   const previewPosition = ref({ x: 0, y: 0 })
   const googleMapsLoaded = ref(false)
   
-  // Configuration Google Maps
+  // État des données cartographiques
+  const mapData = ref({
+    styles: [],
+    defaultCenter: { lat: 48.8566, lng: 2.3522 }, // Paris par défaut
+    defaultZoom: 13,
+    mapOptions: {
+      disableDefaultUI: true,
+      zoomControl: true,
+      gestureHandling: 'cooperative'
+    }
+  })
+  
+  // Récupérer les données cartographiques depuis le cache serveur
+  const fetchMapData = async () => {
+    try {
+      console.log('🔍 Récupération des données cartographiques depuis le cache serveur')
+      const response = await fetch('/api/maps')
+      const result = await response.json()
+      
+      if (result.success && result.data) {
+        console.log('✅ Données cartographiques récupérées avec succès')
+        mapData.value = result.data
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des données cartographiques:', error)
+    }
+  }
+  
+  // Configuration Google Maps avec les données en cache
   const getMapOptions = () => ({
-    zoom: 13,
-    center: { lat: 48.8566, lng: 2.3522 }, // Paris par défaut
-    disableDefaultUI: true,
-    zoomControl: true,
+    zoom: mapData.value.defaultZoom,
+    center: mapData.value.defaultCenter,
+    disableDefaultUI: mapData.value.mapOptions?.disableDefaultUI ?? true,
+    zoomControl: mapData.value.mapOptions?.zoomControl ?? true,
     zoomControlOptions: {
       position: window.google?.maps?.ControlPosition?.TOP_RIGHT || 2
     },
-    gestureHandling: 'cooperative',
-    styles: [
-      // Style minimaliste
-      {
-        featureType: 'administrative',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }]
-      },
-      {
-        featureType: 'administrative.country',
-        elementType: 'labels',
-        stylers: [{ visibility: 'on' }]
-      },
-      {
-        featureType: 'administrative.locality',
-        elementType: 'labels',
-        stylers: [{ visibility: 'on' }]
-      },
-      {
-        featureType: 'poi',
-        stylers: [{ visibility: 'off' }]
-      },
-      {
-        featureType: 'poi.park',
-        elementType: 'geometry',
-        stylers: [{ visibility: 'on' }, { color: '#c8e6c9' }]
-      },
-      {
-        featureType: 'road',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }]
-      },
-      {
-        featureType: 'road.highway',
-        elementType: 'labels',
-        stylers: [{ visibility: 'on' }]
-      },
-      {
-        featureType: 'road.arterial',
-        elementType: 'labels',
-        stylers: [{ visibility: 'simplified' }]
-      },
-      {
-        featureType: 'transit',
-        stylers: [{ visibility: 'off' }]
-      },
-      {
-        featureType: 'water',
-        elementType: 'geometry',
-        stylers: [{ color: '#bbdefb' }]
-      }
-    ]
+    gestureHandling: mapData.value.mapOptions?.gestureHandling ?? 'cooperative',
+    styles: mapData.value.styles || []
   })
   
   // Chargement de Google Maps
@@ -350,8 +328,11 @@
   }, { deep: true })
   
   // Lifecycle
-  onMounted(() => {
+  onMounted(async () => {
     console.log('InteractiveMap monté')
+    // Récupérer d'abord les données cartographiques depuis le cache
+    await fetchMapData()
+    // Puis charger Google Maps avec ces données
     loadGoogleMaps()
   })
   </script>

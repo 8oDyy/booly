@@ -25,6 +25,7 @@
                   @focus="showCategoryDropdown = true"
                   @blur="hideCategoryDropdown"
                   @input="filterCategories"
+                  @keyup.enter="performSearch"
                   placeholder="Que cherchez-vous ?"
                   class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 w-48"
                 />
@@ -53,6 +54,7 @@
               </svg>
               <input
                 v-model="locationQuery"
+                @keyup.enter="performSearch"
                 placeholder="Où ?"
                 class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 flex-1"
               />

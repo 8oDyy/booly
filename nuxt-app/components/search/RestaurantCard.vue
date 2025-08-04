@@ -4,7 +4,7 @@
       <!-- Photo du restaurant -->
       <div class="flex-shrink-0">
         <img 
-          :src="coverPhoto || '/placeholder.svg?height=120&width=120'"
+          :src="coverPhoto || 'https://via.placeholder.com/120x120'"
           :alt="business.name"
           class="w-30 h-30 object-cover rounded-lg"
         />

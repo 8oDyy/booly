@@ -13,6 +13,8 @@
 </template>
 
 <script setup lang="ts">
+import { useSupabaseClient } from '#imports'
+
 const supabase = useSupabaseClient()
 const router = useRouter()
 
