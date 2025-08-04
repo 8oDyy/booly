@@ -61,22 +61,22 @@
               <UIcon name="i-heroicons-plus" class="w-4 h-4" />
               <span>Plus</span>
             </button>
+
+            <template #header>
+              <div class="flex items-center justify-between">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Tous les tags</h3>
+                <UButton
+                  color="gray"
+                  variant="ghost"
+                  icon="i-heroicons-x-mark-20-solid"
+                  @click="isTagsModalOpen = false"
+                />
+              </div>
+            </template>
             
             <!-- Contenu du modal -->
             <template #body>
               <UCard>
-                <template #header>
-                  <div class="flex items-center justify-between">
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Tous les tags</h3>
-                    <UButton
-                      color="gray"
-                      variant="ghost"
-                      icon="i-heroicons-x-mark-20-solid"
-                      @click="isTagsModalOpen = false"
-                    />
-                  </div>
-                </template>
-
                 <div class="space-y-6 max-h-96 overflow-y-auto">
                   <div
                     v-for="category in tagCategories"
@@ -236,8 +236,6 @@
           </button>
         </div>
       </div>
-  
-      <!-- Le modal est maintenant intégré avec le bouton Plus -->
     </div>
   </template>
   
@@ -384,22 +382,6 @@
     }
   }
 
-  
-  const openTagsModal = () => {
-    isTagsModalOpen.value = true
-  }
-  
-  const handleModalClose = () => {
-    // Force la fermeture du modal
-    isTagsModalOpen.value = false
-  }
-  
-  const applyTagsAndClose = () => {
-    // Appliquer les tags sélectionnés et fermer le modal
-    isTagsModalOpen.value = false
-    // Émettre un événement pour informer le parent des changements si nécessaire
-    emit('update:filters')
-  }
   
   const clearAllTags = () => {
     selectedTags.value = []

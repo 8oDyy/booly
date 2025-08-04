@@ -121,7 +121,7 @@ export const useBusinesses = () => {
             tag:tags!business_tags_tag_id_fkey ( id, name )
           )
         `,
-        { count: "exact" }
+        { count: "exact", head: false }
       )
 
       if (filters.query) {

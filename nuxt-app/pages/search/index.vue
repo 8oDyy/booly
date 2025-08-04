@@ -376,6 +376,18 @@ watch(() => route.query, async (newQuery, oldQuery) => {
   await performSearch()
 })
 
+// Surveiller les changements de page pour relancer la recherche
+watch(currentPage, async (newPage) => {
+  console.log('📄 Changement de page détecté:', newPage)
+  await performSearch()
+  
+  // Scroll automatique vers le haut de la page
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+})
+
 </script>
 
 <style scoped>
