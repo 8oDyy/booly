@@ -27,6 +27,13 @@ type BusinessWithReviews = Business & {
     description: string | null
   }>
   category?: { id: string; name: string; slug: string }
+  business_tags?: Array<{
+    tag_id: string | null
+    tags: {
+      id: string
+      name: string
+    } | null
+  }>
   avg_rating?: number
   review_count?: number
   last_review_content?: string | null
@@ -42,7 +49,7 @@ interface SearchFilters {
   maxDistance?: number
   sortBy?: "name" | "rating" | "distance" | "created_at"
   sortOrder?: "asc" | "desc"
-  priceRange?: string[]
+  priceRange?: ("1" | "2" | "3" | "4" | null)[]
   services?: string[]
   openNow?: boolean
   price_range?: number[]
@@ -108,6 +115,10 @@ export const useBusinesses = () => {
             profiles!last_reviews_user_id_fkey (
               full_name
             )
+          ),
+          business_tags (
+            tag_id,
+            tag:tags!business_tags_tag_id_fkey ( id, name )
           )
         `,
         { count: "exact" }
@@ -166,6 +177,7 @@ export const useBusinesses = () => {
           last_review_content: (b as any).last_reviews?.content ?? null,
           last_review_date: (b as any).last_reviews?.created_at ?? null,
           last_review_author: (b as any).last_reviews?.profiles?.full_name ?? 'Anonyme',
+          business_tags: (b as any).business_tags ?? [],
         }
       })
 
@@ -194,39 +206,43 @@ export const useBusinesses = () => {
   const getBusinessById = async (id: string) => {
     try {
       const { data, error } = await supabase
-        .from("businesses")
-        .select(
-          `
+      .from("businesses")
+      .select(
+        `
+        *,
+        category:categories (
+          id,
+          name,
+          slug,
+          description
+        ),
+        reviews (
           *,
-          category:categories (
-            id,
-            name,
-            slug,
-            description
-          ),
-          reviews (
-            *,
-            profiles (
-              full_name,
-              avatar_url
-            )
-          ),
-          photos ( * ),
-          last_reviews!left(
-            content,
-            created_at,
-            profiles!last_reviews_user_id_fkey (
-              full_name
-            )
-          ),
-          opening_hours (
-            day_of_week,
-            opening_times
+          profiles (
+            full_name,
+            avatar_url
           )
-        `,
+        ),
+        photos ( * ),
+        last_reviews!left(
+          content,
+          created_at,
+          profiles!last_reviews_user_id_fkey (
+            full_name
+          )
+        ),
+        opening_hours (
+          day_of_week,
+          opening_times
+        ),
+        business_tags (
+          tag_id,
+          tag:tags!business_tags_tag_id_fkey ( id, name )
         )
-        .eq("id", id)
-        .single()
+      `
+      )
+      .eq("id", id)
+      .single()
 
       if (error) {
         console.error('Erreur lors de la récupération du business:', error)

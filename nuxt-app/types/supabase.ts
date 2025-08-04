@@ -14,55 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_tags: {
+        Row: {
+          business_id: string | null
+          id: string
+          tag_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          id?: string
+          tag_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          id?: string
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_tags_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           address: string | null
+          average_rating: number | null
           category_id: string | null
           city: string | null
           country: string | null
           created_at: string | null
           description: string | null
           id: string
+          last_review_at: string | null
           latitude: number | null
           longitude: number | null
           name: string
           owner_id: string | null
           phone: string | null
           postal_code: string | null
+          price: Database["public"]["Enums"]["price_level"] | null
+          review_count: number | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
           address?: string | null
+          average_rating?: number | null
           category_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
+          last_review_at?: string | null
           latitude?: number | null
           longitude?: number | null
           name: string
           owner_id?: string | null
           phone?: string | null
           postal_code?: string | null
+          price?: Database["public"]["Enums"]["price_level"] | null
+          review_count?: number | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
           address?: string | null
+          average_rating?: number | null
           category_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
+          last_review_at?: string | null
           latitude?: number | null
           longitude?: number | null
           name?: string
           owner_id?: string | null
           phone?: string | null
           postal_code?: string | null
+          price?: Database["public"]["Enums"]["price_level"] | null
+          review_count?: number | null
           updated_at?: string | null
           website?: string | null
         }
@@ -113,6 +158,42 @@ export type Database = {
         }
         Relationships: []
       }
+      last_reviews: {
+        Row: {
+          business_id: string
+          content: string | null
+          created_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          business_id: string
+          content?: string | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          content?: string | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "last_reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "last_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           created_at: string | null
@@ -148,6 +229,38 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      opening_hours: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          day_of_week: number
+          id: string
+          opening_times: Json
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          day_of_week: number
+          id?: string
+          opening_times: Json
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          day_of_week?: number
+          id?: string
+          opening_times?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_hours_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       photos: {
         Row: {
@@ -370,6 +483,24 @@ export type Database = {
           },
         ]
       }
+      tags: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       visits: {
         Row: {
           business_id: string
@@ -439,7 +570,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      price_level: "4" | "1" | "2" | "3"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -566,6 +697,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      price_level: ["4", "1", "2", "3"],
+    },
   },
 } as const

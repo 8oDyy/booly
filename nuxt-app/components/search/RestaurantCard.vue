@@ -40,7 +40,7 @@
             <span>{{ business.city || 'Ville non renseignée' }}</span>
           </div>
           
-          <!-- TODO: Ajouter les champs opening_hours à la table businesses -->
+          <!-- Horaires d'ouverture -->
           <UBadge 
             :color="status.open ? 'success' : 'error'" 
             variant="subtle"
@@ -75,15 +75,15 @@
             {{ business.category.name }}
           </UBadge>
           
-          <!-- TODO: Ajouter les champs services à la table businesses -->
-          <UBadge 
-            v-for="service in mockServices" 
-            :key="service"
-            color="neutral" 
+          <!-- Tags (version avec méthode) -->
+          <UBadge
+            v-for="(tag, i) in displayTags"
+            :key="i"
+            color="neutral"
             variant="soft"
             size="xs"
           >
-            {{ service }}
+            {{ tag }}
           </UBadge>
         </div>
       </div>
@@ -96,7 +96,22 @@ import { computed } from 'vue'
 
 // Props du composant - utilise les types Supabase
 interface Props {
-  business: any // Type BusinessWithReviews du composable
+  business: {
+    id: string
+    name: string
+    category?: { id: string; name: string; slug: string }
+    photos?: Array<{ url: string; description: string | null }>
+    avg_rating?: number
+    review_count?: number
+    business_tags?: Array<{
+      tag?: { id: string; name: string }   // ⚠️ alias "tag"
+    }>
+    opening_hours?: any[]
+    last_review_content?: string | null
+    last_review_date?: string | null
+    last_review_author?: string | null
+    city?: string
+  }
 }
 
 const props = defineProps<Props>()
@@ -111,6 +126,14 @@ const coverPhoto = computed(() => {
 // Note moyenne
 const avgRating = computed(() => {
   return props.business.avg_rating || 0
+})
+
+// Noms des tags à afficher (version améliorée)
+const displayTags = computed(() => {
+  return (props.business.business_tags ?? [])
+    .map(bt => bt.tag?.name)   // <- “tag” et plus “tags”
+    .filter(Boolean)           // enlève undefined
+    .slice(0, 4)               // limite à 4 badges
 })
 
 // TODO: Implémenter la logique d'horaires avec les vraies données
@@ -141,6 +164,7 @@ const formatDate = (dateString: string | null) => {
 }
 
 console.log('Horaires pour', props.business.name, props.business.opening_hours)
+console.log('Tags:', JSON.stringify(props.business.business_tags, null, 2))
 
 </script>
 
