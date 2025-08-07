@@ -136,18 +136,6 @@ const displayTags = computed(() => {
     .slice(0, 4)               // limite à 4 badges
 })
 
-// TODO: Implémenter la logique d'horaires avec les vraies données
-const isOpenNow = computed(() => {
-  // Pour l'instant, on retourne aléatoirement true/false
-  return Math.random() > 0.5
-})
-
-// TODO: Remplacer par les vrais services de la base de données
-const mockServices = computed(() => {
-  const services = ['Livraison', 'Terrasse']
-  return services.slice(0, Math.floor(Math.random() * 3))
-})
-
 // Fonction pour formater la date
 const formatDate = (dateString: string | null) => {
   if (!dateString) return ''
@@ -162,9 +150,6 @@ const formatDate = (dateString: string | null) => {
   if (diffDays < 30) return `il y a ${Math.ceil(diffDays / 7)} semaines`
   return `il y a ${Math.ceil(diffDays / 30)} mois`
 }
-
-console.log('Horaires pour', props.business.name, props.business.opening_hours)
-console.log('Tags:', JSON.stringify(props.business.business_tags, null, 2))
 
 </script>
 

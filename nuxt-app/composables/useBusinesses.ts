@@ -53,6 +53,7 @@ interface SearchFilters {
   services?: string[]
   openNow?: boolean
   price_range?: number[]
+  tags?: string[]  // Ajout des tags pour le filtrage
 }
 
 /* -------------------------------------------------------------------------- */
@@ -143,6 +144,13 @@ export const useBusinesses = () => {
       // Appliquer le filtre de note minimale côté serveur avec la colonne average_rating
       if (filters.minRating && filters.minRating > 0) {
         query = query.gte('average_rating', filters.minRating)
+      }
+      
+      // Filtrer par tags si spécifiés
+      if (filters.tags && filters.tags.length > 0) {
+        // Utiliser la fonction in pour vérifier si business_tags.tag_id est dans la liste des tags sélectionnés
+        // Cette approche est compatible avec la syntaxe PostgREST
+        query = query.in('business_tags.tag_id', filters.tags)
       }
 
       const sortBy = filters.sortBy ?? "created_at"

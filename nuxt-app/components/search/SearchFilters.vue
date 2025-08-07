@@ -47,13 +47,13 @@
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
             ]"
           >
-            <UIcon :name="tag.icon" class="w-4 h-4" />
+            <UIcon name="i-heroicons-tag" class="w-4 h-4" />
             <span>{{ tag.name }}</span>
           </button>
           
           <!-- Bouton Plus avec Modal intégré -->
-          <UModal v-model="isTagsModalOpen" :ui="{ width: 'sm:max-w-3xl' }">
-            <!-- Le bouton qui ouvre le modal -->
+          <UModal title="Tous les tags" v-model="isTagsModalOpen" :ui="{ width: 'sm:max-w-3xl' }">
+
             <button
               class="flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 transition-all duration-200"
               @click="isTagsModalOpen = true"
@@ -61,20 +61,6 @@
               <UIcon name="i-heroicons-plus" class="w-4 h-4" />
               <span>Plus</span>
             </button>
-
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Tous les tags</h3>
-                <UButton
-                  color="gray"
-                  variant="ghost"
-                  icon="i-heroicons-x-mark-20-solid"
-                  @click="isTagsModalOpen = false"
-                />
-              </div>
-            </template>
-            
-            <!-- Contenu du modal -->
             <template #body>
               <UCard>
                 <div class="space-y-6 max-h-96 overflow-y-auto">
@@ -91,30 +77,17 @@
                         v-for="tag in category.tags"
                         :key="tag.id"
                         @click="toggleTag(tag.id)"
+                        class="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                         :class="[
-                          'flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200',
-                          selectedTags.includes(tag.id) 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                          selectedTags.includes(tag.id) ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                         ]"
                       >
-                        <UIcon :name="tag.icon" class="w-4 h-4" />
+                        <UIcon name="i-heroicons-tag" class="w-4 h-4" />
                         <span>{{ tag.name }}</span>
                       </button>
                     </div>
                   </div>
                 </div>
-
-                <template #footer>
-                  <div class="flex justify-between">
-                    <UButton variant="ghost" @click="clearAllTags" color="red">
-                      Effacer les tags
-                    </UButton>
-                    <UButton @click="isTagsModalOpen = false" color="blue">
-                      Appliquer ({{ selectedTags.length }})
-                    </UButton>
-                  </div>
-                </template>
               </UCard>
             </template>
           </UModal>
@@ -240,16 +213,46 @@
   </template>
   
   <script setup>
-  import { ref, computed } from 'vue'
+  import { ref, computed, watch } from 'vue'
   
   // Définition des événements émis par le composant
   const emit = defineEmits(['update:filters'])
   
+  // Définition des props
+  const props = defineProps({
+    selectedPrices: {
+      type: Array,
+      default: () => []
+    },
+    minRating: {
+      type: Number,
+      default: 0
+    },
+    selectedTags: {
+      type: Array,
+      default: () => []
+    }
+  })
+  
   // État local
-  const selectedPrices = ref([])
-  const selectedTags = ref([])
+  const selectedPrices = ref(props.selectedPrices)
+  const selectedTags = ref(props.selectedTags)
   const selectedDistance = ref(10)
-  const selectedRating = ref(0)
+  const selectedRating = ref(props.minRating)
+
+  // Watchers pour synchroniser les props avec l'état local
+  watch(() => props.selectedPrices, (newPrices) => {
+    selectedPrices.value = [...newPrices]
+  })
+
+  watch(() => props.selectedTags, (newTags) => {
+    selectedTags.value = [...newTags]
+  })
+
+  watch(() => props.minRating, (newRating) => {
+    selectedRating.value = newRating
+  })
+  
   const quickFilters = ref({
     openNow: false,
     delivery: false,
@@ -274,65 +277,70 @@
     { value: 4, label: '4+ étoiles' }
   ]
   
-  // Tags suggérés (visibles par défaut)
-  const popularTags = [
-    { id: 'terrasse', name: 'Terrasse', icon: 'i-heroicons-sun' },
-    { id: 'romantique', name: 'Romantique', icon: 'i-heroicons-heart' },
-    { id: 'familial', name: 'Familial', icon: 'i-heroicons-user-group' },
-    { id: 'wifi', name: 'WiFi', icon: 'i-heroicons-wifi' },
-    { id: 'parking', name: 'Parking', icon: 'i-heroicons-truck' }
-  ]
+  // Tags suggérés (visibles par défaut) - récupérés dynamiquement
+  const { popularTags, loading: loadingPopularTags } = usePopularTags()
+  
+  // Tous les tags récupérés depuis la base de données
+  const { allTags, loading: loadingAllTags } = useAllTags()
   
   // Tous les tags organisés par catégorie
-  const tagCategories = [
-    {
-      name: 'Ambiance',
-      tags: [
-        { id: 'romantique', name: 'Romantique', icon: 'i-heroicons-heart' },
-        { id: 'familial', name: 'Familial', icon: 'i-heroicons-user-group' },
-        { id: 'business', name: 'Business', icon: 'i-heroicons-briefcase' },
-        { id: 'decontracte', name: 'Décontracté', icon: 'i-heroicons-face-smile' },
-        { id: 'chic', name: 'Chic', icon: 'i-heroicons-sparkles' },
-        { id: 'anime', name: 'Animé', icon: 'i-heroicons-speaker-wave' }
-      ]
-    },
-    {
-      name: 'Services',
-      tags: [
-        { id: 'wifi', name: 'WiFi', icon: 'i-heroicons-wifi' },
-        { id: 'parking', name: 'Parking', icon: 'i-heroicons-truck' },
-        { id: 'terrasse', name: 'Terrasse', icon: 'i-heroicons-sun' },
-        { id: 'accessible', name: 'Accessible PMR', icon: 'i-heroicons-user' },
-        { id: 'climatise', name: 'Climatisé', icon: 'i-heroicons-snowflake' },
-        { id: 'musique', name: 'Musique live', icon: 'i-heroicons-musical-note' }
-      ]
-    },
-    {
-      name: 'Cuisine',
-      tags: [
-        { id: 'vegetarien', name: 'Végétarien', icon: 'i-heroicons-leaf' },
-        { id: 'vegan', name: 'Vegan', icon: 'i-heroicons-leaf' },
-        { id: 'halal', name: 'Halal', icon: 'i-heroicons-check-badge' },
-        { id: 'bio', name: 'Bio', icon: 'i-heroicons-heart' },
-        { id: 'fait-maison', name: 'Fait maison', icon: 'i-heroicons-home' },
-        { id: 'local', name: 'Produits locaux', icon: 'i-heroicons-map-pin' }
-      ]
-    },
-    {
-      name: 'Horaires',
-      tags: [
-        { id: 'petit-dej', name: 'Petit-déjeuner', icon: 'i-heroicons-sun' },
-        { id: 'brunch', name: 'Brunch', icon: 'i-heroicons-cake' },
-        { id: 'dejeuner', name: 'Déjeuner', icon: 'i-heroicons-clock' },
-        { id: 'diner', name: 'Dîner', icon: 'i-heroicons-moon' },
-        { id: '24h', name: '24h/24', icon: 'i-heroicons-clock' },
-        { id: 'tard', name: 'Ouvert tard', icon: 'i-heroicons-moon' }
+  // Pour l'instant, nous gardons la structure des catégories mais utilisons les tags réels
+  const tagCategories = computed(() => {
+    // Si les tags ne sont pas encore chargés, retourner la structure vide
+    if (loadingAllTags.value || allTags.value.length === 0) {
+      return [
+        { name: 'Ambiance', tags: [] },
+        { name: 'Services', tags: [] },
+        { name: 'Cuisine', tags: [] },
+        { name: 'Horaires', tags: [] }
       ]
     }
-  ]
+    
+    // Catégorisation temporaire basée sur des mots-clés
+    const ambiance = ['romantique', 'familial', 'business', 'décontracté', 'chic', 'animé']
+    const services = ['wifi', 'parking', 'terrasse', 'accessible', 'climatisé', 'musique']
+    const cuisine = ['végétarien', 'vegan', 'halal', 'bio', 'maison', 'local']
+    const horaires = ['petit', 'brunch', 'déjeuner', 'diner', '24h', 'tard', 'matin', 'soir']
+    
+    // Fonction pour catégoriser un tag
+    const categorizeTag = (tag) => {
+      const name = tag.name.toLowerCase()
+      
+      if (ambiance.some(keyword => name.includes(keyword))) return 'Ambiance'
+      if (services.some(keyword => name.includes(keyword))) return 'Services'
+      if (cuisine.some(keyword => name.includes(keyword))) return 'Cuisine'
+      if (horaires.some(keyword => name.includes(keyword))) return 'Horaires'
+      
+      // Par défaut, mettre dans Services
+      return 'Services'
+    }
+    
+    // Créer des objets pour chaque catégorie
+    const categorized = {
+      'Ambiance': [],
+      'Services': [],
+      'Cuisine': [],
+      'Horaires': []
+    }
+    
+    // Catégoriser chaque tag
+    allTags.value.forEach(tag => {
+      const category = categorizeTag(tag)
+      categorized[category].push({
+        id: tag.id,
+        name: tag.name
+      })
+    })
+    
+    // Convertir en format attendu
+    return Object.entries(categorized).map(([name, tags]) => ({
+      name,
+      tags
+    }))
+  })
   
   // Tags visibles par défaut
-  const visibleTags = computed(() => popularTags)
+  const visibleTags = computed(() => popularTags.value)
   
   // Méthodes
   const togglePrice = (value) => {
@@ -357,6 +365,12 @@
     } else {
       selectedTags.value.push(tagId)
     }
+    
+    // Émettre l'événement update:filters avec les tags sélectionnés
+    emit('update:filters', {
+      tags: [...selectedTags.value]
+    })
+    console.log('🔍 Événement update:filters émis avec tags:', { tags: [...selectedTags.value] })
   }
   
   const setMinRating = (rating) => {
@@ -371,20 +385,6 @@
   
   const toggleQuickFilter = (filter) => {
     quickFilters.value[filter] = !quickFilters.value[filter]
-  }
-
-  const togglePriceRange = (priceRange) => {
-    const index = selectedPrices.value.indexOf(priceRange)
-    if (index > -1) {
-      selectedPrices.value.splice(index, 1)
-    } else {
-      selectedPrices.value.push(priceRange)
-    }
-  }
-
-  
-  const clearAllTags = () => {
-    selectedTags.value = []
   }
   
   const clearAllFilters = () => {

@@ -3,7 +3,8 @@
     <!-- Sidebar gauche avec filtres -->
     <template #left>
       <UPageAside class="filters-aside">
-        <SearchFilters
+        <SearchFilters 
+          :selected-tags="selectedTags"
           @update:filters="handleFiltersUpdate"
         />
       </UPageAside>
@@ -120,6 +121,7 @@ const minRating = ref(0)
 const maxDistance = ref(25)
 const selectedPrices = ref([])
 const selectedServices = ref([])
+const selectedTags = ref([])  // Ajout des tags sélectionnés
 const openNow = ref(false)
 
 // État des données
@@ -190,7 +192,8 @@ const performSearch = async () => {
       minRating: minRating.value > 0 ? minRating.value : undefined,
       sortBy: sortBy.value,
       sortOrder: 'desc',
-      priceRange: selectedPrices.value.length > 0 ? selectedPrices.value : undefined
+      priceRange: selectedPrices.value.length > 0 ? selectedPrices.value : undefined,
+      tags: selectedTags.value.length > 0 ? selectedTags.value : undefined // Ajout des tags sélectionnés
     }
 
     console.log('🔍 Recherche avec filtres:', filters, 'Page:', currentPage.value)
@@ -212,45 +215,44 @@ const performSearch = async () => {
   }
 }
 
-
-
 // Fonction pour mettre à jour les paramètres d'URL
 const updateUrlParams = () => {
-  console.log('🔍 updateUrlParams - Début de la fonction')
-  console.log('🔍 updateUrlParams - Prix sélectionnés:', selectedPrices.value)
-  console.log('🔍 updateUrlParams - Note minimale:', minRating.value)
+  console.log('🔍 updateUrlParams appelé...')
   
-  const query = new URLSearchParams()
+  const params = {}
   
-  if (searchQuery.value) {
-    query.set('query', searchQuery.value)
+  // Ajouter les paramètres de recherche s'ils sont définis
+  if (searchQuery.value) params.query = searchQuery.value
+  if (selectedCategoryId.value) params.category = selectedCategoryId.value
+  if (locationQuery.value) params.location = locationQuery.value
+  
+  // Ajouter les prix sélectionnés s'il y en a
+  if (selectedPrices.value && selectedPrices.value.length > 0) {
+    params.prices = selectedPrices.value.join(',')
   }
   
-  if (selectedCategoryId.value) {
-    query.set('category', selectedCategoryId.value)
+  // Ajouter les tags sélectionnés s'il y en a
+  if (selectedTags.value && selectedTags.value.length > 0) {
+    params.tags = selectedTags.value.join(',')
   }
   
-  if (locationQuery.value) {
-    query.set('location', locationQuery.value)
-  }
-  
-  // Ajouter les prix sélectionnés à l'URL
-  if (selectedPrices.value.length > 0) {
-    query.set('prices', selectedPrices.value.join(','))
-    console.log('🔍 updateUrlParams - Ajout des prix à l\'URL:', selectedPrices.value.join(','))
-  }
-  
-  // Ajouter la note minimale à l'URL
+  // Ajouter la note minimale si elle est supérieure à 0
   if (minRating.value > 0) {
-    query.set('rating', minRating.value.toString())
-    console.log('🔍 updateUrlParams - Ajout de la note minimale à l\'URL:', minRating.value)
+    params.rating = minRating.value.toString()
+  }
+  
+  // Ajouter la page courante si elle est différente de 1
+  if (currentPage.value > 1) {
+    params.page = currentPage.value.toString()
   }
   
   // Mettre à jour l'URL sans recharger la page
-  const newPath = `/search${query.toString() ? `?${query.toString()}` : ''}`
-  console.log('🔍 updateUrlParams - Nouveau chemin:', newPath)
-  navigateTo(newPath, { replace: true })
-  console.log('🔍 updateUrlParams - Navigation effectuée')
+  navigateTo({
+    path: '/search',
+    query: params
+  }, { replace: true })
+  
+  console.log('🔍 URL mise à jour avec les paramètres:', params)
 }
 
 const clearFilters = () => {
@@ -272,9 +274,8 @@ const handleFiltersUpdate = (newFilters) => {
   console.log('🔍 handleFiltersUpdate appelé avec:', newFilters)
   
   // Mise à jour des prix sélectionnés
-  if (newFilters.prices) {
-    console.log('🔍 Mise à jour des prix sélectionnés:', newFilters.prices)
-    // Créer un nouveau tableau pour éviter les problèmes de référence
+  if (newFilters.prices !== undefined) {
+    console.log('🔍 Mise à jour des prix:', newFilters.prices)
     selectedPrices.value = Array.from(newFilters.prices)
   }
   
@@ -282,6 +283,12 @@ const handleFiltersUpdate = (newFilters) => {
   if (newFilters.rating !== undefined) {
     console.log('🔍 Mise à jour de la note minimale:', newFilters.rating)
     minRating.value = newFilters.rating
+  }
+  
+  // Mise à jour des tags sélectionnés
+  if (newFilters.tags !== undefined) {
+    console.log('🔍 Mise à jour des tags:', newFilters.tags)
+    selectedTags.value = Array.from(newFilters.tags)
   }
   
   // Réinitialiser la page courante
@@ -308,28 +315,39 @@ const route = useRoute()
 
 // Fonction pour initialiser les filtres à partir des paramètres d'URL
 const initializeFiltersFromUrl = () => {
-  const { query, category, location, rating } = route.query
-
-  searchQuery.value = typeof query === 'string' ? query : ''
-  selectedCategoryId.value = typeof category === 'string' ? category : ''
-  locationQuery.value = typeof location === 'string' ? location : ''
-
-  // Initialiser les prix sélectionnés depuis l'URL
-  const priceParam = route.query.prices
-  if (priceParam) {
-    selectedPrices.value = String(priceParam)
-      .split(',')
-      .map((p) => parseInt(p))
-      .filter((p) => !isNaN(p))
+  const query = route.query
+  
+  // Initialiser les paramètres de recherche
+  searchQuery.value = query.query || ''
+  locationQuery.value = query.location || ''
+  selectedCategoryId.value = query.category || ''
+  
+  // Initialiser les prix sélectionnés
+  if (query.prices) {
+    selectedPrices.value = query.prices.split(',').filter(Boolean)
+  } else {
+    selectedPrices.value = []
   }
   
-  // Initialiser la note minimale depuis l'URL
-  if (rating) {
-    const ratingValue = parseInt(String(rating))
-    if (!isNaN(ratingValue) && ratingValue >= 0 && ratingValue <= 5) {
-      minRating.value = ratingValue
-      console.log('🔍 Note minimale initialisée depuis URL:', minRating.value)
-    }
+  // Initialiser les tags sélectionnés
+  if (query.tags) {
+    selectedTags.value = query.tags.split(',').filter(Boolean)
+  } else {
+    selectedTags.value = []
+  }
+  
+  // Initialiser la note minimale
+  if (query.rating) {
+    minRating.value = parseInt(query.rating) || 0
+  } else {
+    minRating.value = 0
+  }
+  
+  // Initialiser la page courante
+  if (query.page) {
+    currentPage.value = parseInt(query.page) || 1
+  } else {
+    currentPage.value = 1
   }
 }
 
