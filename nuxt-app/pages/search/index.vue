@@ -103,8 +103,56 @@ useHead({
   ]
 })
 
-const items = ref(['Recommandations', 'Plus récent', 'Note', 'Distance', 'Prix'])
+// Options de tri
+const sortOptions = [
+  { label: 'Recommandations', value: 'random' },
+  { label: 'Plus récent', value: 'created_at' },
+  { label: 'Note', value: 'average_rating' },
+  { label: 'Distance', value: 'distance' },
+  { label: 'Prix', value: 'price' }
+]
+
+// Note: Les types doivent être définis dans des fichiers TypeScript (.ts)
+
+// Valeurs pour le sélecteur USelect
+const items = ref(sortOptions.map(option => option.label))
 const value = ref('Recommandations')
+
+// Watcher pour mettre à jour le tri lorsque l'utilisateur change l'option
+watch(value, (newValue) => {
+  // Trouver l'option de tri correspondante
+  const selectedOption = sortOptions.find(option => option.label === newValue)
+  if (selectedOption) {
+    // Mettre à jour sortBy et sortOrder en fonction de l'option sélectionnée
+    sortBy.value = selectedOption.value
+    
+    // Définir l'ordre de tri en fonction de l'option
+    if (selectedOption.value === 'average_rating') {
+      // Note: tri décroissant
+      sortOrder.value = 'desc'
+    } else if (selectedOption.value === 'price') {
+      // Prix: tri croissant
+      sortOrder.value = 'asc'
+    } else if (selectedOption.value === 'created_at') {
+      // Plus récent: tri décroissant
+      sortOrder.value = 'desc'
+    } else if (selectedOption.value === 'random') {
+      // Recommandations: tri aléatoire
+      sortBy.value = 'created_at' // Fallback pour le tri aléatoire
+      sortOrder.value = 'desc'
+    } else {
+      // Par défaut: tri décroissant
+      sortOrder.value = 'desc'
+    }
+    
+    // Réinitialiser la page courante et lancer la recherche
+    currentPage.value = 1
+    updateUrlParams()
+    debouncedSearch()
+    
+    console.log(`🔍 Tri mis à jour: ${sortBy.value} (${sortOrder.value})`)
+  }
+})
 
 // Composables
 const { searchBusinesses, getCategories, getCities } = useBusinesses()
@@ -117,6 +165,7 @@ const currentPage = ref(1)
 const itemsPerPage = 10
 const viewMode = ref('list')
 const sortBy = ref('created_at')
+const sortOrder = ref('desc')
 const minRating = ref(0)
 const maxDistance = ref(25)
 const selectedPrices = ref([])
@@ -131,50 +180,6 @@ const searchResults = ref(null)
 const categories = ref([])
 const cities = ref([])
 
-// Options
-const priceOptions = [
-  { label: '€ - Économique', value: 1 },
-  { label: '€€ - Modéré', value: 2 },
-  { label: '€€€ - Cher', value: 3 },
-  { label: '€€€€ - Très cher', value: 4 }
-]
-
-const serviceOptions = [
-  { label: 'Livraison', value: 'delivery' },
-  { label: 'À emporter', value: 'takeout' },
-  { label: 'Réservation', value: 'reservation' },
-  { label: 'Terrasse', value: 'outdoor' },
-  { label: 'Parking', value: 'parking' },
-  { label: 'WiFi', value: 'wifi' },
-  { label: 'Accessible PMR', value: 'wheelchair' }
-]
-
-const distanceOptions = [
-  { label: '5 km', value: 5 },
-  { label: '10 km', value: 10 },
-  { label: '25 km', value: 25 },
-  { label: '50 km', value: 50 }
-]
-
-const sortOptions = [
-  { label: 'Recommandé', value: 'recommended' },
-  { label: 'Plus récent', value: 'created_at' },
-  { label: 'Nom', value: 'name' },
-  { label: 'Note', value: 'rating' },
-  { label: 'Distance', value: 'distance' },
-  { label: 'Prix', value: 'price' }
-]
-
-// Options calculées
-const categoryOptions = computed(() => [
-  { label: 'Toutes les catégories', value: '' },
-  ...categories.value.map(cat => ({ label: cat.name, value: cat.id }))
-])
-
-const cityOptions = computed(() => [
-  { label: 'Toutes les villes', value: '' },
-  ...cities.value.map(city => ({ label: city, value: city }))
-])
 
 // Recherche avec debounce
 const debouncedSearch = debounce(() => {
@@ -435,5 +440,15 @@ watch(currentPage, async (newPage) => {
 :deep(.map-aside-container > *) {
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Personnalisation des proportions de la page */
+.custom-page-layout {
+  --left-aside-width: 25%; /* 1/5 de l'écran */
+  --right-aside-width: 25%; /* 2/5 de l'écran */
+}
+
+:deep(.custom-page-layout .u-page-grid) {
+  grid-template-columns: var(--left-aside-width) 1fr var(--right-aside-width) !important;
 }
 </style>

@@ -155,7 +155,34 @@ export const useBusinesses = () => {
 
       const sortBy = filters.sortBy ?? "created_at"
       const sortOrder = filters.sortOrder ?? "desc"
-      query = query.order(sortBy, { ascending: sortOrder === "asc" })
+      
+      // Gérer les cas spéciaux de tri
+      const actualSortBy = sortBy // Valeur par défaut
+      
+      // Vérifier si nous avons un cas spécial
+      if (filters.sortBy) {
+        // Pour les recommandations (afficher ceux qui ont le plus d'avis)
+        if (String(filters.sortBy) === 'random') {
+          // On utilise le nombre d'avis comme critère principal pour les recommandations
+          // Les commerces avec le plus d'avis sont considérés comme plus pertinents
+          query = query.order('average_rating', { ascending: false })
+        } 
+        
+        // Pour "Plus récent" (tri par date du dernier commentaire)
+        else if (String(filters.sortBy) === 'created_at') {
+          // On utilise la colonne created_at pour trier par date de création
+          // Note: Supabase ne permet pas facilement de trier sur des relations imbriquées
+          query = query.order('created_at', { ascending: false })
+        }
+        
+        // Pour les autres cas, on utilise le tri standard
+        else {
+          query = query.order(actualSortBy, { ascending: sortOrder === "asc" })
+        }
+      } else {
+        // Tri par défaut
+        query = query.order(actualSortBy, { ascending: sortOrder === "asc" })
+      }
 
       const from = (page - 1) * limit
       const to = from + limit - 1

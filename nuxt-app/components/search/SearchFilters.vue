@@ -388,6 +388,7 @@
   }
   
   const clearAllFilters = () => {
+    // Réinitialiser tous les filtres
     selectedPrices.value = []
     selectedTags.value = []
     selectedDistance.value = 10
@@ -397,6 +398,15 @@
       delivery: false,
       reservation: false
     }
+    
+    // Émettre l'événement pour synchroniser avec le parent
+    emit('update:filters', {
+      prices: [],
+      tags: [],
+      rating: 0
+    })
+    
+    console.log('🔍 Tous les filtres ont été effacés')
   }
   </script>
   
