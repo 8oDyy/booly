@@ -158,6 +158,63 @@ export type Database = {
         }
         Relationships: []
       }
+      checks: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          device_hash: string | null
+          expires_at: string | null
+          id: string
+          ip: unknown | null
+          scanned_at: string
+          tag_id: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          device_hash?: string | null
+          expires_at?: string | null
+          id?: string
+          ip?: unknown | null
+          scanned_at?: string
+          tag_id: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          device_hash?: string | null
+          expires_at?: string | null
+          id?: string
+          ip?: unknown | null
+          scanned_at?: string
+          tag_id?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checks_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "scan_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       last_reviews: {
         Row: {
           business_id: string
@@ -347,6 +404,7 @@ export type Database = {
       reviews: {
         Row: {
           business_id: string
+          check_id: string
           content: string | null
           created_at: string | null
           id: string
@@ -356,6 +414,7 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          check_id: string
           content?: string | null
           created_at?: string | null
           id?: string
@@ -365,6 +424,7 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          check_id?: string
           content?: string | null
           created_at?: string | null
           id?: string
@@ -381,10 +441,61 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_check_id_fkey"
+            columns: ["check_id"]
+            isOneToOne: true
+            referencedRelation: "checks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan_tags: {
+        Row: {
+          business_id: string
+          code: string
+          created_at: string
+          deactivated_at: string | null
+          id: string
+          label: string | null
+          status: Database["public"]["Enums"]["tag_status"]
+          type: Database["public"]["Enums"]["tag_type"]
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          code: string
+          created_at?: string
+          deactivated_at?: string | null
+          id?: string
+          label?: string | null
+          status?: Database["public"]["Enums"]["tag_status"]
+          type: Database["public"]["Enums"]["tag_type"]
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          code?: string
+          created_at?: string
+          deactivated_at?: string | null
+          id?: string
+          label?: string | null
+          status?: Database["public"]["Enums"]["tag_status"]
+          type?: Database["public"]["Enums"]["tag_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_tags_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -571,6 +682,8 @@ export type Database = {
     }
     Enums: {
       price_level: "4" | "1" | "2" | "3"
+      tag_status: "active" | "inactive" | "replaced"
+      tag_type: "QR" | "NFC"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -699,6 +812,8 @@ export const Constants = {
   public: {
     Enums: {
       price_level: ["4", "1", "2", "3"],
+      tag_status: ["active", "inactive", "replaced"],
+      tag_type: ["QR", "NFC"],
     },
   },
 } as const

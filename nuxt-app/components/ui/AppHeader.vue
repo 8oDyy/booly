@@ -287,7 +287,7 @@ const userMenuItems = computed(() => [
   {
     label: 'Mon profil',
     icon: 'i-heroicons-user',
-    click: () => navigateTo('/account')
+    click: () => navigateTo('/profile')
   },
   {
     label: 'Mes réservations',
