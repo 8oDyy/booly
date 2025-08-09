@@ -1,84 +1,128 @@
-import { ref, onMounted } from 'vue'
-import type { DropdownMenuItem } from '#ui/types'
+import { ref, computed } from 'vue'
+import { useBusinesses } from './useBusinesses'
 
-// Utiliser des données statiques en attendant de résoudre le problème de connexion à Supabase
+// Types pour les catégories
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  description?: string
+}
+
+// Cache global pour les catégories
+const categoriesCache = ref<Category[]>([])
+const cacheTimestamp = ref<number>(0)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Durée du cache: 3 heures (en millisecondes)
+const CACHE_DURATION = 3 * 60 * 60 * 1000
+
+/**
+ * Composable pour la gestion des catégories avec cache serveur
+ */
 export const useCategories = () => {
-  const categories = ref<DropdownMenuItem[]>([])
-  const loading = ref(true)
-  const error = ref<string | null>(null)
+  const { getCategories } = useBusinesses()
 
-  const fetchCategories = async () => {
+  /**
+   * Vérifie si le cache est encore valide
+   */
+  const isCacheValid = computed(() => {
+    const now = Date.now()
+    return categoriesCache.value.length > 0 && (now - cacheTimestamp.value) < CACHE_DURATION
+  })
+
+  /**
+   * Récupère les catégories depuis Supabase ou le cache
+   */
+  const fetchCategories = async (forceRefresh = false): Promise<Category[]> => {
+    // Si le cache est valide et qu'on ne force pas le refresh, retourner le cache
+    if (isCacheValid.value && !forceRefresh) {
+      return categoriesCache.value
+    }
+
+    // Si une requête est déjà en cours, attendre qu'elle se termine
+    if (loading.value) {
+      return new Promise((resolve) => {
+        const checkLoading = () => {
+          if (!loading.value) {
+            resolve(categoriesCache.value)
+          } else {
+            setTimeout(checkLoading, 100)
+          }
+        }
+        checkLoading()
+      })
+    }
+
     loading.value = true
     error.value = null
-    
+
     try {
-      // Utiliser des données statiques pour le moment
-      // Ces données simulent celles qui devraient venir de Supabase
-      console.log('Utilisation de données statiques pour les catégories')
+      const categories = await getCategories()
       
-      // Données statiques pour les catégories et sous-catégories
-      const staticCategories = [
-        {
-          label: 'Restauration',
-          icon: 'i-heroicons-cake',
-          children: [
-            { label: 'Restaurants', to: '/categories/restauration/restaurants' },
-            { label: 'Cafés', to: '/categories/restauration/cafes' },
-            { label: 'Fast-food', to: '/categories/restauration/fast-food' },
-            { label: 'Boulangeries', to: '/categories/restauration/boulangeries' }
-          ]
-        },
-        {
-          label: 'Santé & Beauté',
-          icon: 'i-heroicons-heart',
-          children: [
-            { label: 'Salons de coiffure', to: '/categories/sante-beaute/salons-coiffure' },
-            { label: 'Spas', to: '/categories/sante-beaute/spas' },
-            { label: 'Fitness', to: '/categories/sante-beaute/fitness' },
-            { label: 'Pharmacies', to: '/categories/sante-beaute/pharmacies' }
-          ]
-        },
-        {
-          label: 'Shopping',
-          icon: 'i-heroicons-shopping-bag',
-          children: [
-            { label: 'Vêtements', to: '/categories/shopping/vetements' },
-            { label: 'Électronique', to: '/categories/shopping/electronique' },
-            { label: 'Librairies', to: '/categories/shopping/librairies' },
-            { label: 'Supermarchés', to: '/categories/shopping/supermarches' }
-          ]
-        },
-        {
-          label: 'Services',
-          icon: 'i-heroicons-wrench-screwdriver',
-          children: [
-            { label: 'Banques', to: '/categories/services/banques' },
-            { label: 'Assurances', to: '/categories/services/assurances' },
-            { label: 'Immobilier', to: '/categories/services/immobilier' },
-            { label: 'Automobile', to: '/categories/services/automobile' }
-          ]
-        }
-      ];
+      // Mettre à jour le cache
+      categoriesCache.value = categories
+      cacheTimestamp.value = Date.now()
       
-      categories.value = staticCategories;
-      console.log('Catégories statiques chargées:', staticCategories);
-      
+      console.log(`Catégories chargées et mises en cache: ${categories.length} catégories`)
+      return categories
     } catch (err: any) {
-      console.error('Erreur lors du chargement des catégories statiques:', err)
-      error.value = err.message || 'Une erreur est survenue lors du chargement des catégories'
+      console.error('Erreur lors du chargement des catégories:', err)
+      error.value = err.message || 'Erreur lors du chargement des catégories'
+      return []
     } finally {
       loading.value = false
     }
   }
-  
-  onMounted(() => {
-    fetchCategories()
-  })
-  
+
+  /**
+   * Filtre les catégories selon une requête de recherche
+   */
+  const searchCategories = (query: string): Category[] => {
+    if (!query.trim()) return categoriesCache.value
+    
+    const searchTerm = query.toLowerCase().trim()
+    return categoriesCache.value.filter(category => 
+      category.name.toLowerCase().includes(searchTerm) ||
+      category.slug.toLowerCase().includes(searchTerm) ||
+      (category.description && category.description.toLowerCase().includes(searchTerm))
+    )
+  }
+
+  /**
+   * Trouve une catégorie par son ID
+   */
+  const getCategoryById = (id: string): Category | undefined => {
+    return categoriesCache.value.find(category => category.id === id)
+  }
+
+  /**
+   * Trouve une catégorie par son slug
+   */
+  const getCategoryBySlug = (slug: string): Category | undefined => {
+    return categoriesCache.value.find(category => category.slug === slug)
+  }
+
+  /**
+   * Force le rechargement du cache
+   */
+  const refreshCache = () => {
+    return fetchCategories(true)
+  }
+
   return {
-    categories,
-    loading,
-    error,
-    fetchCategories
+    // État
+    categories: computed(() => categoriesCache.value),
+    loading: computed(() => loading.value),
+    error: computed(() => error.value),
+    isCacheValid,
+    
+    // Méthodes
+    fetchCategories,
+    searchCategories,
+    getCategoryById,
+    getCategoryBySlug,
+    refreshCache
   }
 }

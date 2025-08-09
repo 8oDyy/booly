@@ -126,7 +126,7 @@
       <template #right>
         <UButton 
           variant="ghost" 
-          to="/business" 
+          to="/search" 
           color="blue" 
           trailing-icon="i-heroicons-solid-arrow-right" 
           class="font-roboto"

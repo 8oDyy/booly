@@ -7,68 +7,72 @@
       </NuxtLink>
     </template>
     
-    <!-- Centre avec search bar et dropdown menu -->
+    <!-- Centre avec search bar optimisée -->
     <template #default>
       <div class="hidden md:flex flex-1 max-w-2xl mx-8">
-        <div class="w-full bg-gray-50 rounded-full border border-gray-200 hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-200">
-          <div class="flex items-center">
-            
-            <!-- Partie catégorie -->
-            <div class="flex items-center pl-4 pr-2 border-r border-gray-200 relative">
-              <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-              
-              <div class="relative">
+        <div class="relative flex-1 max-w-3xl mx-4">
+          <div class="modern-search-container">
+            <!-- Container principal avec effet glassmorphism -->
+            <div class="search-wrapper">
+              <!-- Input principal de recherche -->
+              <div class="search-input-container">
+                <div class="search-icon">
+                  <UIcon name="i-heroicons-magnifying-glass" />
+                </div>
                 <input
                   v-model="searchQuery"
+                  placeholder="Que cherchez-vous ?"
+                  class="search-input"
+                  @input="handleSearchInput"
+                  @keydown="handleKeydown"
                   @focus="showCategoryDropdown = true"
                   @blur="hideCategoryDropdown"
-                  @input="filterCategories"
-                  @keyup.enter="performSearch"
-                  placeholder="Que cherchez-vous ?"
-                  class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 w-48"
+                />
+                <div class="search-divider"></div>
+                
+                <!-- Input localisation intégré -->
+                <div class="location-icon">
+                  <UIcon name="i-heroicons-map-pin" />
+                </div>
+                <input
+                  v-model="locationQuery"
+                  placeholder="Où ?"
+                  class="location-input"
                 />
                 
-                <!-- Dropdown catégories -->
-                <div v-if="showCategoryDropdown && filteredCategories.length" class="font-black absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                  <div class="max-h-60 overflow-y-auto">
-                    <button
-                      v-for="category in filteredCategories"
-                      :key="category.id"
-                      @mousedown="selectCategory(category)"
-                      class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <span class="text-sm">{{ category.name }}</span>
-                    </button>
+                <!-- Bouton de recherche intégré -->
+                <button class="search-button" @click="performSearch">
+                  <UIcon name="i-heroicons-arrow-right" class="search-button-icon" />
+                </button>
+              </div>
+              
+              <!-- Dropdown des catégories avec style moderne -->
+              <div 
+                v-if="showCategoryDropdown && filteredCategoriesForDropdown.length > 0"
+                class="modern-dropdown"
+              >
+                <div class="dropdown-header">
+                  <span class="dropdown-title">Catégories suggérées</span>
+                </div>
+                <div 
+                  v-for="(category, index) in filteredCategoriesForDropdown" 
+                  :key="category.id"
+                  :class="[
+                    'dropdown-item',
+                    { 'dropdown-item-highlighted': index === highlightedIndex }
+                  ]"
+                  @click="selectCategory(category)"
+                >
+                  <div class="category-icon">
+                    <UIcon name="i-heroicons-tag" />
+                  </div>
+                  <span class="category-name">{{ category.name }}</span>
+                  <div class="category-arrow">
+                    <UIcon name="i-heroicons-arrow-right" />
                   </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Partie localisation -->
-            <div class="flex items-center flex-1 pl-2 pr-4">
-              <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-              </svg>
-              <input
-                v-model="locationQuery"
-                @keyup.enter="performSearch"
-                placeholder="Où ?"
-                class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 flex-1"
-              />
-            </div>
-            
-            <!-- Bouton de recherche -->
-            <button
-              @click="performSearch"
-              class="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 m-1 transition-colors duration-200"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </button>
           </div>
         </div>
       </div>
@@ -171,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { navigateTo } from '#imports'
 import type { FormSubmitEvent, DropdownMenuItem } from '@nuxt/ui'
 import type { LoginSchema, RegisterSchema } from '~/composables/useAuth'
@@ -205,8 +209,56 @@ const showRegisterModal = ref(false)
 const searchQuery = ref('')
 const locationQuery = ref('')
 const selectedCategory = ref<DropdownMenuItem | null>(null)
+const highlightedIndex = ref(-1)
 
-const { categories, loading } = useCategories()
+const { categories, loading, fetchCategories, searchCategories } = useCategories()
+
+// Initialiser les catégories au montage
+onMounted(async () => {
+  await fetchCategories()
+})
+
+// Catégories filtrées pour l'autocomplétion
+const filteredCategoriesForDropdown = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return categories.value.slice(0, 8) // Afficher les 8 premières par défaut
+  }
+  return searchCategories(searchQuery.value).slice(0, 8)
+})
+
+// Gestion de l'input de recherche
+const handleSearchInput = () => {
+  highlightedIndex.value = -1
+  selectedCategory.value = null
+}
+
+// Gestion des touches clavier
+const handleKeydown = (event: KeyboardEvent) => {
+  if (!showCategoryDropdown.value || !filteredCategoriesForDropdown.value.length) return
+  
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      highlightedIndex.value = Math.min(highlightedIndex.value + 1, filteredCategoriesForDropdown.value.length - 1)
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      highlightedIndex.value = Math.max(highlightedIndex.value - 1, -1)
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (highlightedIndex.value >= 0) {
+        selectCategory(filteredCategoriesForDropdown.value[highlightedIndex.value])
+      } else {
+        performSearch()
+      }
+      break
+    case 'Escape':
+      showCategoryDropdown.value = false
+      highlightedIndex.value = -1
+      break
+  }
+}
 
 const switchToLogin = () => {
   isRegisterOpen.value = false
@@ -237,33 +289,37 @@ const handleLogout = async () => {
   window.location.reload()
 }
 
-// Catégories filtrées pour la recherche
-const filteredCategories = computed<DropdownMenuItem[]>(() => {
-  // Créer une copie limitée pour éviter les problèmes de référence profonde
-  const result: DropdownMenuItem[] = [];
+// Gestion de la recherche avec le nouveau composant
+const handleSearch = (searchData: { category?: any, searchTerm: string, location: string }) => {
+  const query = new URLSearchParams()
   
-  // Limiter à 5 éléments maximum
-  const maxItems = 5;
-  let count = 0;
-  
-  // Filtrer les catégories en fonction de la recherche
-  if (!searchQuery.value) {
-    // Prendre les 5 premières catégories si pas de recherche
-    for (let i = 0; i < Math.min(categories.value.length, maxItems); i++) {
-      result.push(categories.value[i]);
-    }
-  } else {
-    // Filtrer par recherche
-    for (let i = 0; i < categories.value.length && count < maxItems; i++) {
-      const cat = categories.value[i];
-      if (cat.label && cat.label.toLowerCase().includes(searchQuery.value.toLowerCase())) {
-        result.push(cat);
-        count++;
-      }
-    }
+  // Gestion de la catégorie sélectionnée
+  if (searchData.category) {
+    query.set('categoryId', searchData.category.id)
+  } else if (searchData.searchTerm.trim()) {
+    query.set('q', searchData.searchTerm.trim())
   }
   
-  return result;
+  // Gestion de la localisation
+  if (searchData.location.trim()) {
+    query.set('location', searchData.location.trim())
+  }
+  
+  // Navigation vers la page de recherche
+  if (query.toString()) {
+    navigateTo(`/search?${query.toString()}`)
+  } else {
+    navigateTo('/search')
+  }
+}
+
+// Catégories filtrées pour le dropdown menu (format legacy)
+const filteredCategories = computed(() => {
+  return categories.value.map(cat => ({
+    label: cat.name,
+    to: `/search?categoryId=${cat.id}`,
+    icon: 'i-heroicons-tag'
+  }))
 })
 
 // Méthodes
@@ -277,10 +333,11 @@ const hideCategoryDropdown = () => {
   }, 200)
 }
 
-const selectCategory = (category: DropdownMenuItem) => {
+const selectCategory = (category: any) => {
   selectedCategory.value = category
-  searchQuery.value = category.label || ''
+  searchQuery.value = category.name || ''
   showCategoryDropdown.value = false
+  highlightedIndex.value = -1
 }
 
 const userMenuItems = computed(() => [
@@ -357,3 +414,294 @@ const performSearch = () => {
 }
 
 </script>
+
+<style scoped>
+/* Styles modernes pour la barre de recherche */
+.modern-search-container {
+  position: relative;
+  width: 100%;
+}
+
+.search-wrapper {
+  position: relative;
+}
+
+.search-input-container {
+  display: flex;
+  align-items: center;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.search-input-container:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.search-input-container:focus-within {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 20px 40px -10px rgba(59, 130, 246, 0.2);
+}
+
+.search-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  color: #3b82f6;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.75rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 500;
+  min-width: 200px;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.search-divider {
+  width: 1px;
+  height: 2rem;
+  background: linear-gradient(to bottom, transparent, #d1d5db, transparent);
+}
+
+.location-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 3rem;
+  color: #6b7280;
+  margin-left: 0.5rem;
+}
+
+.location-input {
+  padding: 0.75rem 0.5rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.location-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.search-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(to right, #2563eb, #1d4ed8);
+  color: white;
+  border-radius: 0.75rem;
+  margin: 0 0.5rem;
+  transition: all 0.2s ease;
+  transform: scale(1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  border: none;
+  cursor: pointer;
+}
+
+.search-button:hover {
+  background: linear-gradient(to right, #1d4ed8, #1e40af);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+}
+
+.search-button:active {
+  transform: scale(0.95);
+}
+
+.search-button-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Styles pour le dropdown moderne */
+.modern-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.75rem;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  z-index: 50;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  backdrop-filter: blur(8px);
+  animation: dropdownSlideIn 0.2s ease-out;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(243, 244, 246, 0.8);
+  background: linear-gradient(to right, rgba(239, 246, 255, 0.5), rgba(238, 242, 255, 0.5));
+}
+
+.dropdown-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: linear-gradient(to right, #eff6ff, #eef2ff);
+  transform: translateX(2px);
+}
+
+.dropdown-item-highlighted {
+  background: linear-gradient(to right, #eff6ff, #eef2ff);
+}
+
+.category-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: #dbeafe;
+  color: #2563eb;
+  border-radius: 0.5rem;
+  margin-right: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover .category-icon {
+  background-color: #bfdbfe;
+  transform: scale(1.1);
+}
+
+.category-name {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.dropdown-item:hover .category-name {
+  color: #1e40af;
+}
+
+.category-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #9ca3af;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover .category-arrow {
+  color: #2563eb;
+  transform: translateX(0.25rem);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .search-input-container {
+    flex-direction: column;
+  }
+  
+  .search-input {
+    min-width: auto;
+  }
+  
+  .location-input {
+    min-width: auto;
+  }
+  
+  .search-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #d1d5db, transparent);
+  }
+}
+
+/* Animation pour les interactions */
+.search-input:focus,
+.location-input:focus {
+  animation: inputFocus 0.3s ease-out;
+}
+
+@keyframes inputFocus {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Effet de brillance subtil */
+.search-input-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  transform: translateX(-100%);
+}
+
+.search-input-container:hover::before {
+  opacity: 1;
+  animation: shimmer 1.5s ease-in-out;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+</style>
