@@ -11,7 +11,7 @@ type Review = Database["public"]["Tables"]["reviews"]["Row"]
 type Photo = Database["public"]["Tables"]["photos"]["Row"]
 type Category = Database["public"]["Tables"]["categories"]["Row"]
 
-interface BusinessWithReviews extends Business {
+export interface BusinessWithReviews extends Business {
   reviews: Array<{
     rating: number
     content: string | null

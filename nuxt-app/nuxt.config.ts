@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     '@nuxtjs/supabase',
     '@pinia/nuxt'
   ],
-  
+
   runtimeConfig: {
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
