@@ -68,9 +68,9 @@
         <div class="flex flex-wrap gap-1">
           <UBadge 
             v-if="business.category"
-            color="primary" 
+            color="secondary" 
             variant="soft"
-            size="xs"
+            size="md"
           >
             {{ business.category.name }}
           </UBadge>
@@ -81,7 +81,7 @@
             :key="i"
             color="neutral"
             variant="soft"
-            size="xs"
+            size="sm"
           >
             {{ tag }}
           </UBadge>

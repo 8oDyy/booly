@@ -20,7 +20,7 @@ defineEmits<Emits>()
 <style scoped>
 .header-search {
   flex: 1;
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 2rem;
 }
 

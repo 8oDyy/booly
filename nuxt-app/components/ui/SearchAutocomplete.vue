@@ -1,223 +1,186 @@
 <template>
   <div class="relative w-full">
-    <!-- Barre de recherche -->
-    <div class="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-      <!-- Partie catégorie -->
-      <div class="flex items-center pl-4 pr-2 border-r border-gray-200 relative">
-        <UIcon name="i-heroicons-magnifying-glass" class="w-5 h-5 text-gray-400 mr-2" />
-        
-        <div class="relative">
+    <!-- Barre de recherche moderne inspirée de Yelp -->
+    <div class="bg-white rounded-2xl p-1 md:p-1.5 shadow-xl border border-gray-100">
+      <div class="flex flex-row gap-1 md:gap-2">
+        <!-- Service search avec autocomplétion -->
+        <div class="flex-1 relative">
+          <UIcon name="i-heroicons-magnifying-glass" class="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5 z-10" />
           <input
             ref="categoryInput"
-            v-model="searchQuery"
-            @focus="showCategoryDropdown = true"
-            @blur="hideCategoryDropdown"
+            v-model="categoryQuery"
             @input="handleCategoryInput"
-            @keydown="handleKeydown"
+            @keydown="handleCategoryKeydown"
+            @focus="showCategorySuggestions = true"
+            @blur="hideCategorySuggestions"
             @keyup.enter="performSearch"
-            placeholder="Que cherchez-vous ?"
-            class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 w-48 text-sm"
+            :placeholder="props.placeholder"
+            class="w-full h-8 md:h-9 pl-8 md:pl-12 pr-2 md:pr-4 text-sm md:text-base text-gray-900 placeholder-gray-500 border-0 outline-none rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all duration-200"
           />
           
-          <!-- Dropdown catégories -->
+          <!-- Dropdown des suggestions de catégories -->
           <div 
-            v-if="showCategoryDropdown && filteredCategories.length" 
-            class="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+            v-if="showCategorySuggestions && filteredCategories.length > 0"
+            class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto"
           >
             <div
               v-for="(category, index) in filteredCategories"
               :key="category.id"
-              @mousedown="selectCategory(category)"
-              @mouseenter="highlightedIndex = index"
-              class="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 text-sm transition-colors"
-              :class="{ 'bg-blue-50': highlightedIndex === index }"
+              :class="[
+                'px-4 py-2 cursor-pointer hover:bg-gray-50 flex items-center gap-2',
+                { 'bg-blue-50': index === selectedCategoryIndex }
+              ]"
+              @mousedown.prevent="selectCategory(category)"
             >
               <UIcon name="i-heroicons-tag" class="w-4 h-4 text-gray-400" />
-              <span class="font-medium">{{ category.name }}</span>
-              <span v-if="category.description" class="text-gray-500 text-xs truncate">
-                {{ category.description }}
-              </span>
-            </div>
-            
-            <!-- Message si pas de résultats -->
-            <div v-if="searchQuery && !filteredCategories.length" class="px-4 py-2 text-sm text-gray-500">
-              Aucune catégorie trouvée
+              <span class="text-sm">{{ category.name }}</span>
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Partie localisation -->
-      <div class="flex items-center flex-1 pl-2 pr-4">
-        <UIcon name="i-heroicons-map-pin" class="w-5 h-5 text-gray-400 mr-2" />
-        <input
-          v-model="locationQuery"
-          @keyup.enter="performSearch"
-          placeholder="Où ?"
-          class="bg-transparent border-0 outline-none text-gray-700 placeholder-gray-500 flex-1 text-sm"
-        />
-      </div>
-      
-      <!-- Bouton de recherche -->
-      <UButton
-        @click="performSearch"
-        :loading="searchLoading"
-        color="primary"
-        size="sm"
-        class="mr-2"
-        icon="i-heroicons-magnifying-glass"
-      >
-        Rechercher
-      </UButton>
-    </div>
-    
-    <!-- Suggestions récentes (optionnel) -->
-    <div v-if="showRecentSearches && recentSearches.length" class="mt-2">
-      <div class="text-xs text-gray-500 mb-1">Recherches récentes :</div>
-      <div class="flex flex-wrap gap-1">
-        <UBadge
-          v-for="search in recentSearches.slice(0, 5)"
-          :key="search"
-          @click="applyRecentSearch(search)"
-          variant="soft"
-          color="neutral"
-          size="xs"
-          class="cursor-pointer hover:bg-gray-200 transition-colors"
+        
+        <!-- Location search -->
+        <div class="flex-1 relative">
+          <UIcon name="i-heroicons-map-pin" class="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5 z-10" />
+          <input
+            v-model="locationQuery"
+            @keyup.enter="performSearch"
+            placeholder="Où ?"
+            class="w-full h-8 md:h-9 pl-8 md:pl-12 pr-2 md:pr-4 text-sm md:text-base text-gray-900 placeholder-gray-500 border-0 outline-none rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          />
+        </div>
+        
+        <!-- Search button -->
+        <UButton
+          @click="performSearch"
+          :loading="searchLoading"
+          size="sm"
+          class="h-8 md:h-9 px-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
         >
-          {{ search }}
-        </UBadge>
+          <UIcon name="i-heroicons-magnifying-glass" class="w-4 h-4 md:w-5 md:h-5" />
+        </UButton>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCategories, type Category } from '~/composables/useCategories'
+import { useCategories } from '~/composables/useCategories'
 
 // Props
 interface Props {
   placeholder?: string
-  showRecentSearches?: boolean
-  autoFocus?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Que cherchez-vous ?',
-  showRecentSearches: true,
-  autoFocus: false
+  placeholder: 'Que cherchez-vous ?'
 })
-
-// Émissions
-const emit = defineEmits<{
-  search: [query: { category?: Category, searchTerm: string, location: string }]
-}>()
 
 // Composables
 const router = useRouter()
-const { categories, fetchCategories, searchCategories, loading } = useCategories()
+const { fetchCategories, searchCategories } = useCategories()
 
-// État réactif
-const searchQuery = ref('')
+// État réactif pour la recherche
+const categoryQuery = ref('')
 const locationQuery = ref('')
-const selectedCategory = ref<Category | null>(null)
-const showCategoryDropdown = ref(false)
-const highlightedIndex = ref(-1)
 const searchLoading = ref(false)
-const categoryInput = ref<HTMLInputElement>()
 
-// Recherches récentes (stockées dans localStorage)
-const recentSearches = ref<string[]>([])
+// État pour l'autocomplétion des catégories
+const showCategorySuggestions = ref(false)
+const selectedCategoryIndex = ref(-1)
+const selectedCategoryId = ref('')
+const allCategories = ref<any[]>([])
 
 // Catégories filtrées pour l'autocomplétion
 const filteredCategories = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return categories.value.slice(0, 8) // Afficher les 8 premières catégories par défaut
-  }
-  return searchCategories(searchQuery.value).slice(0, 8)
+  if (!categoryQuery.value.trim()) return allCategories.value.slice(0, 8)
+  return searchCategories(categoryQuery.value).slice(0, 8)
 })
 
-// Gestion de l'input des catégories
+// Charger les catégories au montage
+onMounted(async () => {
+  try {
+    allCategories.value = await fetchCategories()
+  } catch (error) {
+    console.error('Erreur lors du chargement des catégories:', error)
+  }
+})
+
+// Gestion de l'input de catégorie
 const handleCategoryInput = () => {
-  highlightedIndex.value = -1
-  selectedCategory.value = null
+  selectedCategoryId.value = '' // Reset de la catégorie sélectionnée
+  selectedCategoryIndex.value = -1
+  showCategorySuggestions.value = true
 }
 
-// Gestion des touches clavier
-const handleKeydown = (event: KeyboardEvent) => {
-  if (!showCategoryDropdown.value || !filteredCategories.value.length) return
-  
+// Gestion des touches clavier pour la navigation
+const handleCategoryKeydown = (event: KeyboardEvent) => {
+  if (!showCategorySuggestions.value || filteredCategories.value.length === 0) return
+
   switch (event.key) {
     case 'ArrowDown':
       event.preventDefault()
-      highlightedIndex.value = Math.min(highlightedIndex.value + 1, filteredCategories.value.length - 1)
+      selectedCategoryIndex.value = Math.min(
+        selectedCategoryIndex.value + 1,
+        filteredCategories.value.length - 1
+      )
       break
     case 'ArrowUp':
       event.preventDefault()
-      highlightedIndex.value = Math.max(highlightedIndex.value - 1, -1)
+      selectedCategoryIndex.value = Math.max(selectedCategoryIndex.value - 1, -1)
       break
     case 'Enter':
       event.preventDefault()
-      if (highlightedIndex.value >= 0) {
-        selectCategory(filteredCategories.value[highlightedIndex.value])
+      if (selectedCategoryIndex.value >= 0) {
+        selectCategory(filteredCategories.value[selectedCategoryIndex.value])
       } else {
         performSearch()
       }
       break
     case 'Escape':
-      showCategoryDropdown.value = false
-      highlightedIndex.value = -1
+      hideCategorySuggestions()
       break
   }
 }
 
-// Sélection d'une catégorie
-const selectCategory = (category: Category) => {
-  selectedCategory.value = category
-  searchQuery.value = category.name
-  showCategoryDropdown.value = false
-  highlightedIndex.value = -1
-  
-  // Focus sur le champ de localisation
-  nextTick(() => {
-    const locationInput = document.querySelector('input[placeholder="Où ?"]') as HTMLInputElement
-    locationInput?.focus()
-  })
+// Sélectionner une catégorie
+const selectCategory = (category: any) => {
+  categoryQuery.value = category.name
+  selectedCategoryId.value = category.id
+  hideCategorySuggestions()
+  performSearch()
 }
 
-// Masquer le dropdown avec délai pour permettre les clics
-const hideCategoryDropdown = () => {
+// Masquer les suggestions
+const hideCategorySuggestions = () => {
   setTimeout(() => {
-    showCategoryDropdown.value = false
-    highlightedIndex.value = -1
+    showCategorySuggestions.value = false
+    selectedCategoryIndex.value = -1
   }, 150)
 }
 
-// Effectuer la recherche
+// Effectuer la recherche avec support des catégories
 const performSearch = async () => {
-  if (!searchQuery.value.trim() && !locationQuery.value.trim()) return
+  if (!categoryQuery.value.trim() && !locationQuery.value.trim()) return
   
   searchLoading.value = true
   
   try {
-    // Sauvegarder la recherche récente
-    if (searchQuery.value.trim()) {
-      saveRecentSearch(searchQuery.value.trim())
+    // Construire les paramètres de recherche
+    const query: any = {}
+    
+    // Si une catégorie spécifique est sélectionnée, utiliser son ID
+    if (selectedCategoryId.value) {
+      query.category = selectedCategoryId.value
+    } else if (categoryQuery.value.trim()) {
+      // Sinon, recherche textuelle générale
+      query.query = categoryQuery.value.trim()
     }
     
-    // Émettre l'événement de recherche
-    emit('search', {
-      category: selectedCategory.value || undefined,
-      searchTerm: searchQuery.value.trim(),
-      location: locationQuery.value.trim()
-    })
-    
-    // Naviguer vers la page de recherche
-    const query: any = {}
-    if (searchQuery.value.trim()) query.q = searchQuery.value.trim()
-    if (locationQuery.value.trim()) query.location = locationQuery.value.trim()
-    if (selectedCategory.value) query.categoryId = selectedCategory.value.id
+    if (locationQuery.value.trim()) {
+      query.location = locationQuery.value.trim()
+    }
     
     await router.push({ path: '/search', query })
     
@@ -227,56 +190,6 @@ const performSearch = async () => {
     searchLoading.value = false
   }
 }
-
-// Sauvegarder une recherche récente
-const saveRecentSearch = (search: string) => {
-  const searches = recentSearches.value.filter(s => s !== search)
-  searches.unshift(search)
-  recentSearches.value = searches.slice(0, 10) // Garder seulement les 10 dernières
-  
-  // Sauvegarder dans localStorage
-  try {
-    localStorage.setItem('booly_recent_searches', JSON.stringify(recentSearches.value))
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde des recherches récentes:', error)
-  }
-}
-
-// Appliquer une recherche récente
-const applyRecentSearch = (search: string) => {
-  searchQuery.value = search
-  selectedCategory.value = null
-  performSearch()
-}
-
-// Charger les recherches récentes depuis localStorage
-const loadRecentSearches = () => {
-  try {
-    const saved = localStorage.getItem('booly_recent_searches')
-    if (saved) {
-      recentSearches.value = JSON.parse(saved)
-    }
-  } catch (error) {
-    console.error('Erreur lors du chargement des recherches récentes:', error)
-    recentSearches.value = []
-  }
-}
-
-// Initialisation
-onMounted(async () => {
-  // Charger les catégories
-  await fetchCategories()
-  
-  // Charger les recherches récentes
-  loadRecentSearches()
-  
-  // Auto-focus si demandé
-  if (props.autoFocus) {
-    nextTick(() => {
-      categoryInput.value?.focus()
-    })
-  }
-})
 </script>
 
 <style scoped>
@@ -286,4 +199,6 @@ onMounted(async () => {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
+
 </style>

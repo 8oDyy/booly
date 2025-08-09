@@ -89,6 +89,8 @@
 </template>
 
 <script setup lang="ts">
+import SearchAutocomplete from '~/components/ui/SearchAutocomplete.vue'
+
 interface Props {
   showMobileMenu: boolean
   user: any

@@ -208,8 +208,8 @@ const benefits = [
 
 // Computed
 const calculatedROI = computed(() => {
-  const customers = parseInt(monthlyCustomers.value) || 0
-  const basket = parseInt(averageBasket.value) || 0
+  const customers =(monthlyCustomers.value) || 0
+  const basket = (averageBasket.value) || 0
   const newCustomers = Math.round(customers * 0.3) // +30% de nouveaux clients
   const additionalRevenue = newCustomers * basket
   const planCost = 49 // Coût du plan Pro

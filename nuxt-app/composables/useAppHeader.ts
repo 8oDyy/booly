@@ -83,9 +83,9 @@ export const useAppHeader = () => {
     const query = new URLSearchParams()
     
     if (searchData.category) {
-      query.set('categoryId', searchData.category.id)
+      query.set('category', searchData.category.id)
     } else if (searchData.searchTerm.trim()) {
-      query.set('q', searchData.searchTerm.trim())
+      query.set('query', searchData.searchTerm.trim())
     }
     
     if (searchData.location.trim()) {

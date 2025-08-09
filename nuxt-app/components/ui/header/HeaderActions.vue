@@ -61,6 +61,18 @@
         </div>
         
         <div class="dropdown-menu">
+          <!-- Notifications dans le menu mobile -->
+          <button class="dropdown-item mobile-notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            Notifications
+            <span class="mobile-notification-badge">3</span>
+          </button>
+          
+          <div class="dropdown-divider mobile-only"></div>
+          
           <NuxtLink to="/profile" class="dropdown-item" @click="$emit('close-user-dropdown')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -372,6 +384,27 @@ defineEmits<Emits>()
   background: #f3f4f6;
 }
 
+/* Mobile notifications in dropdown */
+.mobile-notifications {
+  position: relative;
+  justify-content: space-between;
+}
+
+.mobile-notification-badge {
+  background: #dc2626;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+.mobile-only {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .auth-buttons {
     display: none;
@@ -387,6 +420,20 @@ defineEmits<Emits>()
   
   .mobile-menu-btn {
     display: flex;
+  }
+  
+  .mobile-notifications {
+    display: flex;
+  }
+  
+  .mobile-only {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-notifications {
+    display: none;
   }
 }
 </style>

@@ -1,11 +1,11 @@
 <template>
   <nav class="header-nav">
     <NuxtLink 
-      to="/search" 
-      class="nav-link" 
-      :class="{ 'nav-link-active': $route.path.startsWith('/search') }"
+      to="/categories" 
+      class="nav-link hidden lg:block" 
+      :class="{ 'nav-link-active': $route.path.startsWith('/categories') }"
     >
-      Rechercher
+      Catégories
     </NuxtLink>
     <NuxtLink 
       to="/pro" 
