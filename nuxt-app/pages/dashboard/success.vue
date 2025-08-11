@@ -104,7 +104,7 @@ const formatDate = (dateString: string) => {
 
 // Actions
 const goToDashboard = () => {
-  navigateTo('/pro/dashboard')
+  navigateTo('/dashboard')
 }
 
 const goToHome = () => {

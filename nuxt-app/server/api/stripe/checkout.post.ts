@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
     // URLs de redirection (dynamiques basées sur l'environnement)
     const baseUrl = process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const successUrl = `${baseUrl}/pro/dashboard?success=true&plan=${planType}`;
+    const successUrl = `${baseUrl}/dashboard?success=true&plan=${planType}`;
     const cancelUrl = `${baseUrl}/pricing?canceled=true`;
 
     // Vérifier que la clé Stripe est configurée

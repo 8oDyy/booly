@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
     // URL de retour après gestion du portail client
     const baseUrl = process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const returnUrl = `${baseUrl}/pro/dashboard`
+    const returnUrl = `${baseUrl}/dashboard`
 
     // Créer une session de portail client
     const portalSession = await stripe.billingPortal.sessions.create({

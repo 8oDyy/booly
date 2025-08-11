@@ -84,7 +84,7 @@
           <!-- Dashboard Pro - seulement si abonné -->
           <NuxtLink 
             v-if="hasActiveSubscription" 
-            to="/pro/dashboard" 
+            to="/dashboard" 
             class="dropdown-item dropdown-item-pro" 
             @click="$emit('close-user-dropdown')"
           >
