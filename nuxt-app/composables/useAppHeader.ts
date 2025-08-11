@@ -2,12 +2,17 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { navigateTo } from '#app'
 
+// État global partagé pour les modals
+const globalModalState = {
+  isLoginOpen: ref(false),
+  isRegisterOpen: ref(false)
+}
+
 export const useAppHeader = () => {
   const { user, logout, loginWithGoogle, loginWithGithub } = useAuth()
   
-  // État des modales
-  const isLoginOpen = ref(false)
-  const isRegisterOpen = ref(false)
+  // Utilisation de l'état global
+  const { isLoginOpen, isRegisterOpen } = globalModalState
   
   // État du menu mobile et dropdown utilisateur
   const showMobileMenu = ref(false)
@@ -20,8 +25,11 @@ export const useAppHeader = () => {
   
   // Méthodes pour les modales
   const openLoginModal = () => {
+    console.log('🔧 openLoginModal appelé dans useAppHeader')
+    console.log('🔧 Avant:', { isLoginOpen: isLoginOpen.value, isRegisterOpen: isRegisterOpen.value })
     isLoginOpen.value = true
     isRegisterOpen.value = false
+    console.log('🔧 Après:', { isLoginOpen: isLoginOpen.value, isRegisterOpen: isRegisterOpen.value })
   }
   
   const openRegisterModal = () => {

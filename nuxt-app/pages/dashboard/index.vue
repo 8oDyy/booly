@@ -2,7 +2,7 @@
   <UPage>
     <UPageHeader
       title="Tableau de bord"
-      class="bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 text-white"
+      class="bg-gradient-to-br from-primary-700 via-primary-600 to-primary-500 text-white"
       :ui="{
         container: 'relative py-4 flex flex-col items-center justify-center text-center',
         title: 'text-white text-2xl font-bold mb-0',
@@ -13,141 +13,175 @@
     <UPageBody>
       <UContainer class="py-8">
         <div v-if="loading" class="flex justify-center py-12">
-          <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-blue-500" />
+          <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-primary-500" />
         </div>
         
         <template v-else>
-          <!-- Informations utilisateur -->
-          <UCard class="mb-8">
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-bold">Informations personnelles</h2>
-                <UButton color="gray" variant="ghost" icon="i-heroicons-pencil-square" to="/profile/edit" />
-              </div>
-            </template>
-            
-            <div class="flex flex-col md:flex-row gap-6">
-              <div class="flex-shrink-0">
-                <UAvatar
-                  :src="profile?.avatar_url || ''"
-                  :alt="profile?.full_name || 'Utilisateur'"
-                  size="xl"
-                  :ui="{ rounded: 'rounded-full' }"
-                />
-              </div>
-              <div class="space-y-2">
-                <h3 class="text-xl font-bold">{{ profile?.full_name || 'Utilisateur' }}</h3>
-                <p class="text-gray-500">{{ profile?.email }}</p>
-                <p class="text-sm text-gray-500">Membre depuis {{ formatDate(profile?.created_at) }}</p>
-              </div>
-            </div>
-          </UCard>
-          
-          <!-- Abonnement actuel -->
-          <UCard class="mb-8">
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-bold">Votre abonnement</h2>
-              </div>
-            </template>
-            
-            <div v-if="subscription">
-              <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                <div>
-                  <div class="flex items-center gap-2 mb-1">
-                    <h3 class="text-xl font-bold">Plan {{ getPlanName(subscription.plan_type) }}</h3>
-                    <UBadge v-if="subscription.status === 'active'" color="green">Actif</UBadge>
-                    <UBadge v-else-if="subscription.status === 'canceled'" color="yellow">Annulé</UBadge>
-                    <UBadge v-else-if="subscription.status === 'past_due'" color="red">Paiement en retard</UBadge>
-                    <UBadge v-else color="gray">{{ subscription.status }}</UBadge>
-                  </div>
-                  <p class="text-gray-500">
-                    {{ subscription.status === 'active' ? 'Votre abonnement est actif' : 'Votre abonnement n\'est pas actif' }}
-                  </p>
-                </div>
-                
-                <div v-if="subscription.plan_type !== 'free'" class="mt-4 md:mt-0">
-                  <UButton 
-                    v-if="subscription.status === 'active'" 
-                    color="red" 
-                    variant="outline" 
-                    @click="confirmCancelSubscription = true"
-                  >
-                    Annuler l'abonnement
-                  </UButton>
-                  <UButton 
-                    v-else-if="subscription.status === 'canceled'" 
-                    color="primary" 
-                    to="/business"
-                  >
-                    Réactiver l'abonnement
-                  </UButton>
-                </div>
-              </div>
-              
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <UCard class="bg-gray-50">
-                  <div class="text-center">
-                    <div class="text-sm text-gray-500 mb-1">Prix</div>
-                    <div class="text-lg font-bold">
-                      {{ getPlanPrice(subscription.plan_type) }}
+          <!-- Navigation des onglets -->
+          <UTabs v-model="activeTab" :items="tabs" class="mb-8">
+            <template #profile>
+              <!-- Contenu du profil existant -->
+              <div class="space-y-6">
+                <!-- Informations utilisateur -->
+                <UCard>
+                  <template #header>
+                    <div class="flex items-center justify-between">
+                      <h2 class="text-lg font-bold">Informations personnelles</h2>
+                      <UButton color="gray" variant="ghost" icon="i-heroicons-pencil-square" to="/profile/edit" />
+                    </div>
+                  </template>
+                  
+                  <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-shrink-0">
+                      <UAvatar
+                        :src="profile?.avatar_url || ''"
+                        :alt="profile?.full_name || 'Utilisateur'"
+                        size="xl"
+                        :ui="{ rounded: 'rounded-full' }"
+                      />
+                    </div>
+                    <div class="space-y-2">
+                      <h3 class="text-xl font-bold">{{ profile?.full_name || 'Utilisateur' }}</h3>
+                      <p class="text-gray-500">{{ profile?.email }}</p>
+                      <p class="text-sm text-gray-500">Membre depuis {{ formatDate(profile?.created_at) }}</p>
                     </div>
                   </div>
                 </UCard>
                 
-                <UCard class="bg-gray-50">
-                  <div class="text-center">
-                    <div class="text-sm text-gray-500 mb-1">Début de période</div>
-                    <div class="text-lg font-bold">
-                      {{ formatDate(subscription.current_period_start) }}
+                <!-- Abonnement actuel -->
+                <UCard>
+                  <template #header>
+                    <div class="flex items-center justify-between">
+                      <h2 class="text-lg font-bold">Votre abonnement</h2>
                     </div>
+                  </template>
+                  
+                  <div v-if="subscription">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                      <div>
+                        <div class="flex items-center gap-2 mb-1">
+                          <h3 class="text-xl font-bold">Plan {{ getPlanName(subscription.plan_type) }}</h3>
+                          <UBadge v-if="subscription.status === 'active'" color="green">Actif</UBadge>
+                          <UBadge v-else-if="subscription.status === 'canceled'" color="yellow">Annulé</UBadge>
+                          <UBadge v-else-if="subscription.status === 'past_due'" color="red">Paiement en retard</UBadge>
+                          <UBadge v-else color="gray">{{ subscription.status }}</UBadge>
+                        </div>
+                        <p class="text-gray-500">
+                          {{ subscription.status === 'active' ? 'Votre abonnement est actif' : 'Votre abonnement n\'est pas actif' }}
+                        </p>
+                      </div>
+                      
+                      <div v-if="subscription.plan_type !== 'free'" class="mt-4 md:mt-0">
+                        <UButton 
+                          v-if="subscription.status === 'active'" 
+                          color="red" 
+                          variant="outline" 
+                          @click="confirmCancelSubscription = true"
+                        >
+                          Annuler l'abonnement
+                        </UButton>
+                        <UButton 
+                          v-else-if="subscription.status === 'canceled'" 
+                          color="primary" 
+                          to="/business"
+                        >
+                          Réactiver l'abonnement
+                        </UButton>
+                      </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <UCard class="bg-gray-50">
+                        <div class="text-center">
+                          <div class="text-sm text-gray-500 mb-1">Prix</div>
+                          <div class="text-lg font-bold">
+                            {{ getPlanPrice(subscription.plan_type) }}
+                          </div>
+                        </div>
+                      </UCard>
+                      
+                      <UCard class="bg-gray-50">
+                        <div class="text-center">
+                          <div class="text-sm text-gray-500 mb-1">Statut</div>
+                          <div class="text-lg font-bold capitalize">
+                            {{ subscription.status === 'active' ? 'Actif' : subscription.status }}
+                          </div>
+                        </div>
+                      </UCard>
+                      
+                      <UCard class="bg-gray-50">
+                        <div class="text-center">
+                          <div class="text-sm text-gray-500 mb-1">Prochaine facturation</div>
+                          <div class="text-lg font-bold">
+                            {{ formatDate(subscription.current_period_end) }}
+                          </div>
+                        </div>
+                      </UCard>
+                    </div>
+                    
+                    <div v-if="subscription.status === 'active' && subscription.plan_type !== 'free'" class="border-t pt-4">
+                      <p class="text-sm text-gray-500">
+                        Votre abonnement se renouvellera automatiquement le {{ formatDate(subscription.current_period_end) }}.
+                        {{ subscription.cancel_at ? `L'abonnement prendra fin le ${formatDate(subscription.cancel_at)}.` : '' }}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div v-else class="text-center py-8">
+                    <UIcon name="i-heroicons-credit-card" class="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun abonnement actif</h3>
+                    <p class="text-gray-500 mb-4">Vous n'avez pas encore d'abonnement actif.</p>
+                    <UButton to="/business" color="primary">Voir les plans disponibles</UButton>
                   </div>
                 </UCard>
                 
-                <UCard class="bg-gray-50">
-                  <div class="text-center">
-                    <div class="text-sm text-gray-500 mb-1">Fin de période</div>
-                    <div class="text-lg font-bold">
-                      {{ formatDate(subscription.current_period_end) }}
+                <!-- Historique des paiements -->
+                <UCard v-if="subscription && subscription.plan_type !== 'free'">
+                  <template #header>
+                    <div class="flex items-center justify-between">
+                      <h2 class="text-lg font-bold">Historique des paiements</h2>
                     </div>
+                  </template>
+                  
+                  <div class="overflow-x-auto">
+                    <UTable :columns="paymentColumns" :rows="paymentHistory" :loading="loadingPayments">
+                      <template #empty-state>
+                        <div class="text-center py-4">
+                          <p class="text-gray-500">Aucun paiement trouvé</p>
+                        </div>
+                      </template>
+                    </UTable>
                   </div>
                 </UCard>
               </div>
-              
-              <div v-if="subscription.status === 'active' && subscription.plan_type !== 'free'" class="border-t pt-4">
-                <p class="text-sm text-gray-500">
-                  Votre abonnement se renouvellera automatiquement le {{ formatDate(subscription.current_period_end) }}.
-                  {{ subscription.cancel_at ? `L'abonnement prendra fin le ${formatDate(subscription.cancel_at)}.` : '' }}
-                </p>
-              </div>
-            </div>
-            
-            <div v-else class="text-center py-8">
-              <UIcon name="i-heroicons-credit-card" class="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun abonnement actif</h3>
-              <p class="text-gray-500 mb-4">Vous n'avez pas encore d'abonnement actif.</p>
-              <UButton to="/business" color="primary">Voir les plans disponibles</UButton>
-            </div>
-          </UCard>
-          
-          <!-- Historique des paiements -->
-          <UCard v-if="subscription && subscription.plan_type !== 'free'">
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-bold">Historique des paiements</h2>
-              </div>
             </template>
             
-            <div class="overflow-x-auto">
-              <UTable :columns="paymentColumns" :rows="paymentHistory" :loading="loadingPayments">
-                <template #empty-state>
-                  <div class="text-center py-4">
-                    <p class="text-gray-500">Aucun paiement trouvé</p>
-                  </div>
-                </template>
-              </UTable>
-            </div>
-          </UCard>
+            <template #businesses>
+              <!-- Gestion des établissements -->
+              <BusinessManagement 
+                :businesses="businesses"
+                :categories="categories"
+                @business-updated="refreshBusinesses"
+                @business-created="refreshBusinesses"
+              />
+            </template>
+            
+            <template #reviews>
+              <!-- Gestion des avis -->
+              <ReviewsManagement 
+                :businesses="businesses"
+                @response-sent="refreshBusinesses"
+              />
+            </template>
+            
+            <template #tags>
+              <!-- Gestion des tags -->
+              <TagsManagement 
+                :businesses="businesses"
+                @tags-updated="refreshBusinesses"
+              />
+            </template>
+          </UTabs>
         </template>
       </UContainer>
     </UPageBody>
@@ -183,18 +217,24 @@
   </UPage>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useToast } from '@nuxt/ui'
-import { useSupabaseClient } from '#imports'
+import { useSupabaseClient, useSupabaseUser } from '#imports'
+import type { Database } from '~/types/supabase'
+
+type Business = Database['public']['Tables']['businesses']['Row']
+type Category = Database['public']['Tables']['categories']['Row']
 
 definePageMeta({
   title: 'Tableau de bord - Booly',
-  description: 'Gérez votre compte et vos abonnements'
+  description: 'Gérez votre compte et vos abonnements',
+  middleware: 'auth'
 })
 
 const toast = useToast()
-const supabase = useSupabaseClient()
+const supabase = useSupabaseClient<Database>()
+const user = useSupabaseUser()
 const loading = ref(true)
 const profile = ref(null)
 const subscription = ref(null)
@@ -202,6 +242,35 @@ const paymentHistory = ref([])
 const loadingPayments = ref(false)
 const confirmCancelSubscription = ref(false)
 const cancellingSubscription = ref(false)
+
+// Nouvelles données pour les établissements
+const activeTab = ref(0)
+const businesses = ref<Business[]>([])
+const categories = ref<Category[]>([])
+
+// Configuration des onglets
+const tabs = [
+  {
+    key: 'profile',
+    label: 'Mon profil',
+    icon: 'i-heroicons-user'
+  },
+  {
+    key: 'businesses',
+    label: 'Mes établissements',
+    icon: 'i-heroicons-building-storefront'
+  },
+  {
+    key: 'reviews',
+    label: 'Avis et réponses',
+    icon: 'i-heroicons-chat-bubble-left-right'
+  },
+  {
+    key: 'tags',
+    label: 'Tags QR/NFC',
+    icon: 'i-heroicons-qr-code'
+  }
+]
 
 const paymentColumns = [
   {
@@ -224,7 +293,62 @@ const paymentColumns = [
 
 onMounted(async () => {
   await fetchUserData()
+  await loadBusinessData()
 })
+
+// Nouvelles fonctions pour les établissements
+async function loadBusinessData() {
+  if (!user.value) return
+  
+  try {
+    await refreshBusinesses()
+    await loadCategories()
+  } catch (error) {
+    console.error('Erreur lors du chargement des données établissements:', error)
+  }
+}
+
+async function refreshBusinesses() {
+  if (!user.value) return
+  
+  try {
+    const { data: businessesData, error: businessesError } = await supabase
+      .from('businesses')
+      .select(`
+        *,
+        categories (
+          id,
+          name,
+          icon
+        )
+      `)
+      .eq('owner_id', user.value.id)
+      .order('created_at', { ascending: false })
+    
+    if (businessesError) throw businessesError
+    
+    businesses.value = businessesData || []
+  } catch (error) {
+    console.error('Erreur lors du chargement des établissements:', error)
+    throw error
+  }
+}
+
+async function loadCategories() {
+  try {
+    const { data: categoriesData, error: categoriesError } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name')
+    
+    if (categoriesError) throw categoriesError
+    
+    categories.value = categoriesData || []
+  } catch (error) {
+    console.error('Erreur lors du chargement des catégories:', error)
+    throw error
+  }
+}
 
 async function fetchUserData() {
   try {

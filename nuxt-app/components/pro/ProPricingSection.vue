@@ -4,61 +4,47 @@
       <!-- Section header -->
       <div class="text-center mb-16">
         <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-          Tarifs transparents, sans surprise
+          Choisissez votre plan
         </h2>
         <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-          Choisissez l'offre qui correspond à vos besoins. Essai gratuit de 30 jours, sans engagement.
+          Développez votre activité avec nos outils professionnels de gestion d'avis et de réputation en ligne.
         </p>
-        
-        <!-- Toggle billing -->
-        <div class="flex items-center justify-center mb-8">
-          <span class="text-gray-600 mr-3">Mensuel</span>
-          <button
-            @click="toggleBilling"
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            :class="isYearly ? 'bg-blue-600' : 'bg-gray-200'"
-          >
-            <span
-              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-              :class="isYearly ? 'translate-x-6' : 'translate-x-1'"
-            />
-          </button>
-          <span class="text-gray-600 ml-3">Annuel</span>
-          <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            -20%
-          </span>
-        </div>
       </div>
       
       <!-- Pricing cards -->
-      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <!-- Starter Plan -->
+      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <!-- Basic Plan -->
         <div class="bg-white rounded-xl border border-gray-200 p-6 relative">
           <div class="text-center">
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Starter</h3>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Plan Basic</h3>
             <p class="text-gray-600 mb-6">Parfait pour débuter</p>
             
             <div class="mb-6">
-              <span class="text-4xl font-bold text-gray-900">
-                {{ isYearly ? '19' : '24' }}€
-              </span>
+              <span class="text-4xl font-bold text-gray-900">19,99€</span>
               <span class="text-gray-600">/mois</span>
-              <div v-if="isYearly" class="text-sm text-green-600 font-medium">
-                Économisez 60€/an
-              </div>
             </div>
             
             <UButton
-              @click="startCheckout('starter')"
-              :loading="loadingPlan === 'starter'"
-              class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-semibold mb-6"
+              @click="startCheckout('basic')"
+              :loading="loadingPlan === 'basic'"
+              :disabled="getButtonState('basic').disabled"
+              :class="[
+                'w-full py-3 rounded-xl font-semibold mb-6',
+                getButtonState('basic').variant === 'current' 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : getButtonState('basic').variant === 'upgrade'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : getButtonState('basic').variant === 'disabled'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-900 hover:bg-gray-800 text-white'
+              ]"
             >
-              <template v-if="loadingPlan === 'starter'">
+              <template v-if="loadingPlan === 'basic'">
                 <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
                 Redirection...
               </template>
               <template v-else>
-                Commencer l'essai gratuit
+                {{ getButtonState('basic').text }}
               </template>
             </UButton>
           </div>
@@ -66,11 +52,11 @@
           <ul class="space-y-3">
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Jusqu'à 100 avis/mois</span>
+              <span class="text-gray-600">Gestion d'un établissement</span>
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Tableau de bord basique</span>
+              <span class="text-gray-600">Avis clients illimités</span>
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
@@ -78,16 +64,12 @@
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Support email</span>
-            </li>
-            <li class="flex items-center">
-              <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Badge "Avis vérifiés"</span>
+              <span class="text-gray-600">Statistiques de base</span>
             </li>
           </ul>
         </div>
         
-        <!-- Pro Plan (Most Popular) -->
+        <!-- Premium Plan (Most Popular) -->
         <div class="bg-white rounded-xl border-2 border-blue-500 p-6 relative">
           <!-- Popular badge -->
           <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -97,30 +79,35 @@
           </div>
           
           <div class="text-center">
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Pro</h3>
-            <p class="text-gray-600 mb-6">Pour les entreprises en croissance</p>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Premium</h3>
+            <p class="text-gray-600 mb-6">Pour les professionnels exigeants</p>
             
             <div class="mb-6">
-              <span class="text-4xl font-bold text-gray-900">
-                {{ isYearly ? '39' : '49' }}€
-              </span>
+              <span class="text-4xl font-bold text-gray-900">29,99€</span>
               <span class="text-gray-600">/mois</span>
-              <div v-if="isYearly" class="text-sm text-green-600 font-medium">
-                Économisez 120€/an
-              </div>
             </div>
             
             <UButton
-              @click="startCheckout('pro')"
-              :loading="loadingPlan === 'pro'"
-              class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold mb-6"
+              @click="startCheckout('premium')"
+              :loading="loadingPlan === 'premium'"
+              :disabled="getButtonState('premium').disabled"
+              :class="[
+                'w-full py-3 rounded-xl font-semibold mb-6',
+                getButtonState('premium').variant === 'current' 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : getButtonState('premium').variant === 'upgrade'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : getButtonState('premium').variant === 'disabled'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              ]"
             >
-              <template v-if="loadingPlan === 'pro'">
+              <template v-if="loadingPlan === 'premium'">
                 <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
                 Redirection...
               </template>
               <template v-else>
-                Commencer l'essai gratuit
+                {{ getButtonState('premium').text }}
               </template>
             </UButton>
           </div>
@@ -128,19 +115,19 @@
           <ul class="space-y-3">
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Jusqu'à 500 avis/mois</span>
+              <span class="text-gray-600">Gestion de 5 établissements</span>
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Tableau de bord avancé</span>
+              <span class="text-gray-600">Avis clients illimités</span>
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Analytics détaillés</span>
+              <span class="text-gray-600">QR codes et NFC personnalisés</span>
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Intégration API</span>
+              <span class="text-gray-600">Statistiques avancées</span>
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
@@ -148,66 +135,7 @@
             </li>
             <li class="flex items-center">
               <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Personnalisation avancée</span>
-            </li>
-          </ul>
-        </div>
-        
-        <!-- Enterprise Plan -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 relative">
-          <div class="text-center">
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Enterprise</h3>
-            <p class="text-gray-600 mb-6">Pour les grandes entreprises</p>
-            
-            <div class="mb-6">
-              <span class="text-4xl font-bold text-gray-900">
-                {{ isYearly ? '79' : '99' }}€
-              </span>
-              <span class="text-gray-600">/mois</span>
-              <div v-if="isYearly" class="text-sm text-green-600 font-medium">
-                Économisez 240€/an
-              </div>
-            </div>
-            
-            <UButton
-              @click="startCheckout('enterprise')"
-              :loading="loadingPlan === 'enterprise'"
-              class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-semibold mb-6"
-            >
-              <template v-if="loadingPlan === 'enterprise'">
-                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
-                Redirection...
-              </template>
-              <template v-else>
-                Commencer l'essai gratuit
-              </template>
-            </UButton>
-          </div>
-          
-          <ul class="space-y-3">
-            <li class="flex items-center">
-              <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Avis illimités</span>
-            </li>
-            <li class="flex items-center">
-              <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Multi-établissements</span>
-            </li>
-            <li class="flex items-center">
-              <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">API complète</span>
-            </li>
-            <li class="flex items-center">
-              <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Support dédié 24/7</span>
-            </li>
-            <li class="flex items-center">
-              <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">Formation personnalisée</span>
-            </li>
-            <li class="flex items-center">
-              <UIcon name="i-heroicons-check" class="w-5 h-5 text-green-500 mr-3" />
-              <span class="text-gray-600">SLA garanti</span>
+              <span class="text-gray-600">Intégrations API</span>
             </li>
           </ul>
         </div>
@@ -238,63 +166,67 @@
 </template>
 
 <script setup lang="ts">
+const user = useSupabaseUser()
+const { createCheckoutSession, hasActiveSubscription, currentPlan } = useSubscription()
+
 // Reactive data
-const isYearly = ref(false)
 const loadingPlan = ref<string | null>(null)
 
-// Price IDs for Stripe (à adapter selon votre configuration Stripe)
-const priceIds = {
-  starter: {
-    monthly: 'price_starter_monthly', // Remplacer par vos vrais price IDs
-    yearly: 'price_starter_yearly'
-  },
-  pro: {
-    monthly: 'price_pro_monthly',
-    yearly: 'price_pro_yearly'
-  },
-  enterprise: {
-    monthly: 'price_enterprise_monthly',
-    yearly: 'price_enterprise_yearly'
+// Computed properties pour gérer les états d'abonnement
+const isSubscribed = computed(() => hasActiveSubscription.value)
+const userCurrentPlan = computed(() => currentPlan.value)
+
+// États des boutons selon l'abonnement actuel
+const getButtonState = (plan: 'basic' | 'premium') => {
+  if (!isSubscribed.value) {
+    return {
+      text: plan === 'basic' ? 'Choisir Basic' : 'Choisir Premium',
+      disabled: false,
+      variant: 'primary'
+    }
+  }
+  
+  if (userCurrentPlan.value === plan) {
+    return {
+      text: 'Plan actuel',
+      disabled: true,
+      variant: 'current'
+    }
+  }
+  
+  if (userCurrentPlan.value === 'basic' && plan === 'premium') {
+    return {
+      text: 'Passer au Premium',
+      disabled: false,
+      variant: 'upgrade'
+    }
+  }
+  
+  return {
+    text: 'Non disponible',
+    disabled: true,
+    variant: 'disabled'
   }
 }
 
-// Methods
-const toggleBilling = () => {
-  isYearly.value = !isYearly.value
-}
+// Emits
+const emit = defineEmits<{
+  'open-login': []
+}>()
 
-const startCheckout = async (plan: 'starter' | 'pro' | 'enterprise') => {
+// Methods
+const startCheckout = async (plan: 'basic' | 'premium') => {
+  if (!user.value) {
+    emit('open-login')
+    return
+  }
+
   try {
     loadingPlan.value = plan
-    
-    // Récupérer le price ID selon le plan et la période
-    const priceId = isYearly.value ? priceIds[plan].yearly : priceIds[plan].monthly
-    
-    // Préparer les données pour Stripe
-    const checkoutData = {
-      priceId,
-      successUrl: `${window.location.origin}/pro/success?plan=${plan}`,
-      cancelUrl: `${window.location.origin}/pro?canceled=true`,
-      customerEmail: '', // Sera demandé par Stripe
-      userId: '' // À récupérer si l'utilisateur est connecté
-    }
-    
-    // Appeler l'API Stripe checkout
-    const response = await $fetch('/api/stripe/checkout', {
-      method: 'POST',
-      body: checkoutData
-    }) as { url?: string }
-    
-    if (response && response.url) {
-      // Rediriger vers Stripe Checkout
-      window.location.href = response.url
-    } else {
-      throw new Error('Erreur lors de la création de la session de paiement')
-    }
-  } catch (error) {
+    await createCheckoutSession(plan)
+  } catch (error: any) {
     console.error('Erreur checkout:', error)
-    // TODO: Afficher une notification d'erreur
-    alert('Une erreur est survenue. Veuillez réessayer.')
+    alert('Une erreur est survenue lors de la création du paiement. Veuillez réessayer.')
   } finally {
     loadingPlan.value = null
   }
@@ -302,9 +234,8 @@ const startCheckout = async (plan: 'starter' | 'pro' | 'enterprise') => {
 
 // Gestion des paramètres URL (pour afficher des messages de succès/erreur)
 onMounted(() => {
-  const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.get('canceled') === 'true') {
-    // TODO: Afficher un message "Paiement annulé"
+  const route = useRoute()
+  if (route.query.canceled === 'true') {
     console.log('Paiement annulé')
   }
 })

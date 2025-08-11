@@ -1,251 +1,322 @@
 <template>
-  <UPage>
-    <UPageHeader
-      title="Mon profil"
-      :links="links"
-      class="bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500"
-      :ui="{
-        container: 'relative py-4 flex flex-col items-center justify-center text-center',
-        title: 'text-white text-2xl font-bold mb-0',
-        wrapper: 'w-full max-w-6xl',
-      }"
-    >
-      <UAvatar 
-        :src="user?.user_metadata?.avatar_url || 'https://i.pravatar.cc/300'" 
-        alt="Photo de profil" 
-        size="2xl"
-        class="ring-4 ring-white dark:ring-gray-900 shadow-lg transform hover:scale-105 transition-transform duration-300"
-      />
-      <h2 class="text-2xl font-bold text-blue-700 dark:text-blue-400">{{ user?.user_metadata?.name || 'Utilisateur' }}</h2>
-    </UPageHeader>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header avec informations utilisateur -->
+    <div class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <ProfileHeader
+          :user="user"
+          :profile="profile"
+          @edit-avatar="handleEditAvatar"
+          @edit-profile="showSettings = true"
+          @open-settings="showSettings = true"
+          @share-profile="handleShareProfile"
+        />
+      </div>
+    </div>
 
-    <UPageBody>
-      <!-- Profil utilisateur -->
-      <UContainer class="py-8">
-        <!-- Navigation par onglets -->
-        <UTabs :defaultValue="'reviews'" :items="tabs" class="mb-8">
-          
-          <!-- Contenu de l'onglet Avis -->
-          <template #reviews>
-            <div class="py-4">
-              <div v-if="isLoading" class="flex justify-center py-12">
-                <UProgress animation="carousel" />
-              </div>
-              
-              <div v-else-if="!reviews.length" class="text-center py-12">
-                <UIcon name="i-heroicons-chat-bubble-left-right" class="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucun avis pour le moment</h3>
-                <p class="text-gray-500 mb-6">Vous n'avez pas encore laissé d'avis sur des établissements.</p>
-                <UButton to="/" color="primary" label="Découvrir des établissements" />
-              </div>
-              
-              <div v-else class="space-y-6">
-                <UCard v-for="review in reviews" :key="review.id" class="border border-gray-200 hover:border-blue-300 transition-colors">
-                  <div class="flex items-start gap-4">
-                    <UAvatar :src="review.business?.image || 'https://picsum.photos/id/42/300'" size="lg" class="flex-shrink-0" />
-                    <div class="flex-1">
-                      <div class="flex justify-between items-start">
-                        <div>
-                          <h3 class="font-bold text-blue-700">{{ review.business?.name }}</h3>
-                          <p class="text-sm text-gray-500">{{ formatDate(review.created_at) }}</p>
-                        </div>
-                        <URating v-model="review.rating" :length="5" disabled />
-                      </div>
-                      <p class="mt-2 text-gray-700">{{ review.content }}</p>
-                      
-                      <div v-if="review.photos && review.photos.length" class="mt-4 flex gap-2 overflow-x-auto pb-2">
-                        <UImage
-                          v-for="(photo, index) in review.photos" 
-                          :key="index" 
-                          :src="photo.url" 
-                          class="h-20 w-20 object-cover rounded-lg"
-                          :alt="`Photo ${index + 1} de l'avis`"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </UCard>
-              </div>
+    <!-- Contenu principal -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Statistiques -->
+      <div class="mb-8">
+        <ProfileStats
+          :reviews-count="reviewsCount"
+          :photos-count="photosCount"
+          :places-visited="placesVisited"
+          :pending-count="pendingChecks.length"
+        />
+      </div>
+
+      <!-- Navigation par onglets -->
+      <div class="mb-8">
+        <nav class="flex space-x-8 border-b border-gray-200">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            :class="[
+              'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
+              activeTab === tab.id
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            <div class="flex items-center gap-2">
+              <component :is="tab.icon" class="w-5 h-5" />
+              <span>{{ tab.label }}</span>
+              <span
+                v-if="tab.count > 0"
+                class="bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs"
+              >
+                {{ tab.count }}
+              </span>
             </div>
-          </template>
-          
-          <!-- Contenu de l'onglet Photos -->
-          <template #photos>
-            <div class="py-4">
-              <div v-if="isLoading" class="flex justify-center py-12">
-                <UProgress animation="carousel" />
-              </div>
-              
-              <div v-else-if="!photos.length" class="text-center py-12">
-                <UIcon name="i-heroicons-photo" class="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucune photo pour le moment</h3>
-                <p class="text-gray-500 mb-6">Vous n'avez pas encore partagé de photos.</p>
-                <UButton to="/search" color="primary" label="Découvrir des établissements" />
-              </div>
-              
-              <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <UCard v-for="photo in photos" :key="photo.id" class="group cursor-pointer hover:shadow-md transition-shadow">
-                  <div class="relative aspect-square">
-                    <UImage 
-                      :src="photo.url" 
-                      class="absolute inset-0 h-full w-full object-cover rounded-t-lg"
-                      :alt="photo.description || 'Photo utilisateur'"
-                    />
-                  </div>
-                  <div class="p-3">
-                    <p class="text-sm font-medium text-blue-700 truncate">{{ photo.business?.name || 'Sans établissement' }}</p>
-                    <p class="text-xs text-gray-500">date de la photo</p>
-                  </div>
-                </UCard>
-              </div>
-            </div>
-          </template>
-          
-          <!-- Contenu de l'onglet Lieux visités sans avis -->
-          <template #pending>
-            <div class="py-4">
-              <div v-if="isLoading" class="flex justify-center py-12">
-                <UProgress animation="carousel" />
-              </div>
-              
-              <div v-else-if="!pendingChecks.length" class="text-center py-12">
-                <UIcon name="i-heroicons-check-circle" class="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 class="text-xl font-semibold text-gray-700 mb-2">Vous avez laissé un avis sur tous les lieux visités</h3>
-                <p class="text-gray-500 mb-6">Continuez à découvrir de nouveaux établissements.</p>
-                <UButton to="/search" color="primary" label="Découvrir des établissements" />
-              </div>
-              
-              <div v-else class="space-y-4">
-                <UCard v-for="check in pendingChecks" :key="check.id" class="hover:shadow-md transition-all duration-200 p-6">
-                  <div class="flex items-center gap-4">
-                    <UAvatar :src="check.business?.image || 'https://picsum.photos/id/169/300'" size="lg" class="flex-shrink-0" />
-                    <div class="flex-1">
-                      <h3 class="font-bold text-blue-700">{{ check.business?.name }}</h3>
-                      <p class="text-sm text-gray-500">Visité le {{ formatDate(check.created_at || '') }}</p>
-                    </div>
-                    <UButton 
-                      color="primary" 
-                      variant="soft" 
-                      icon="i-heroicons-star" 
-                      label="Laisser un avis"
-                      :to="`/place/${check.business_id}/review`"
-                    />
-                  </div>
-                </UCard>
-              </div>
-            </div>
-          </template>
-        </UTabs>
-      </UContainer>
-    </UPageBody>
-  </UPage>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Contenu des onglets -->
+      <div class="space-y-8">
+        <!-- Onglet Avis -->
+        <div v-if="activeTab === 'reviews'">
+          <ProfileReviews
+            :reviews="reviews"
+            :loading="isLoading"
+            @edit-review="handleEditReview"
+            @delete-review="handleDeleteReview"
+            @view-photo="handleViewPhoto"
+            @view-business="handleViewBusiness"
+            @discover-places="handleDiscoverPlaces"
+          />
+        </div>
+
+        <!-- Onglet Photos -->
+        <div v-if="activeTab === 'photos'">
+          <ProfilePhotos
+            :photos="photos"
+            :loading="isLoading"
+            @view-photo="handleViewPhoto"
+            @delete-photo="handleDeletePhoto"
+            @view-business="handleViewBusiness"
+            @discover-places="handleDiscoverPlaces"
+          />
+        </div>
+
+        <!-- Onglet Activité -->
+        <div v-if="activeTab === 'activity'">
+          <ProfileActivity
+            :reviews="reviews"
+            :pending-checks="pendingChecks"
+            :loading="isLoading"
+            @write-review="handleWriteReview"
+            @view-review="handleViewReview"
+            @view-business="handleViewBusiness"
+            @discover-places="handleDiscoverPlaces"
+          />
+        </div>
+
+        <!-- Onglet Paramètres -->
+        <div v-if="activeTab === 'settings'">
+          <ProfileSettings
+            :profile="profile"
+            @profile-updated="handleProfileUpdated"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal des paramètres (version mobile) -->
+    <div
+      v-if="showSettings"
+      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 md:hidden"
+      @click="showSettings = false"
+    >
+      <div
+        class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        @click.stop
+      >
+        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Paramètres</h2>
+          <button
+            @click="showSettings = false"
+            class="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-4">
+          <ProfileSettings
+            :profile="profile"
+            @profile-updated="handleProfileUpdated"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de visualisation de photo -->
+    <div
+      v-if="photoModal.isOpen"
+      class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+      @click="photoModal.isOpen = false"
+    >
+      <div class="max-w-4xl max-h-full">
+        <img
+          :src="photoModal.currentPhoto?.url"
+          :alt="photoModal.currentPhoto?.description || 'Photo'"
+          class="max-w-full max-h-full object-contain rounded-lg"
+          @click.stop
+        />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { useProfile, type Review, type Photo, type Check } from '~/composables/useProfile'
-import { ref, computed, onMounted, nextTick } from 'vue'
-import type { User } from '@supabase/supabase-js'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useProfile } from '~/composables/useProfile'
+import type { Photo, Review, Check } from '~/composables/useProfile'
+import ProfileHeader from '~/components/profile/ProfileHeader.vue'
+import ProfileStats from '~/components/profile/ProfileStats.vue'
+import ProfileSettings from '~/components/profile/ProfileSettings.vue'
+import ProfileReviews from '~/components/profile/ProfileReviews.vue'
+import ProfilePhotos from '~/components/profile/ProfilePhotos.vue'
+import ProfileActivity from '~/components/profile/ProfileActivity.vue'
 
 definePageMeta({
+  middleware: 'auth',
   title: 'Mon Profil - Booly',
   description: 'Gérez votre profil et consultez votre historique'
 })
 
-// Récupération du profil utilisateur et des données associées
-const { 
-  profile, 
-  reviews, 
-  photos, 
-  pendingChecks,
-  isLoading, 
-  error, 
-  loadProfileData,
-  filterReviews,
-  filterPhotos
-} = useProfile()
-
-// État local pour la recherche
-const searchQuery = ref('')
 const user = useSupabaseUser()
+const { profile, reviews, photos, pendingChecks, isLoading, error, fetchProfile, fetchReviews, fetchPhotos, fetchPendingChecks } = useProfile()
 
-// Filtrer les avis en fonction de la recherche
-const filteredReviews = computed(() => {
-  return filterReviews(searchQuery.value)
-})
-
-// Filtrer les photos en fonction de la recherche
-const filteredPhotos = computed(() => {
-  return filterPhotos(searchQuery.value)
-})
-
-// Compteurs
-const reviewsCount = computed(() => reviews.value.length)
-const photosCount = computed(() => photos.value.length)
-const placesVisited = computed(() => {
-  // Nombre total de lieux visités (avec ou sans avis)
-  return reviews.value.length + pendingChecks.value.length
-})
-
-// Configuration de la barre de navigation
-const links = ref([
-  {
-    label: 'Paramètres',
-    icon: 'i-heroicons-cog',
-    to: '/settings',
-  }
-])
-
-
-// Configuration des onglets - l'onglet par défaut est défini directement dans UTabs avec defaultValue
-
-const tabs = computed(() => [
-  {
-    slot: 'reviews',
-    label: 'Mes avis',
-    icon: 'i-heroicons-chat-bubble-left-right',
-    badge: reviewsCount.value ? { label: reviewsCount.value.toString(), color: 'primary' } : undefined,
-    value: 'reviews'
-  },
-  {
-    slot: 'photos',
-    label: 'Mes photos',
-    icon: 'i-heroicons-photo',
-    badge: photosCount.value ? { label: photosCount.value.toString(), color: 'success' } : undefined,
-    value: 'photos'
-  },
-  {
-    slot: 'pending',
-    label: 'En attente d\'avis',
-    icon: 'i-heroicons-clock',
-    badge: pendingChecks.value.length ? { label: pendingChecks.value.length.toString(), color: 'warning' } : undefined,
-    value: 'pending'
-  }
-])
-
-// Formater les dates
-const formatDate = (dateString?: string | null): string => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(date)
-}
-
-// Modal pour afficher les photos en grand
-const photoModal = reactive({
+// État local
+const activeTab = ref('reviews')
+const showSettings = ref(false)
+const photoModal = ref({
   isOpen: false,
   currentPhoto: null as Photo | null
 })
 
-const openPhotoModal = (photo: Photo) => {
-  photoModal.currentPhoto = photo
-  photoModal.isOpen = true
+// Icônes pour les onglets (composants SVG simples)
+const ReviewIcon = {
+  template: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+  </svg>`
 }
 
-// Récupération des données au chargement de la page
-onMounted(async () => {
-  await loadProfileData()
+const PhotoIcon = {
+  template: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>`
+}
+
+const ActivityIcon = {
+  template: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>`
+}
+
+const SettingsIcon = {
+  template: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>`
+}
+
+// Configuration des onglets
+const tabs = computed(() => [
+  {
+    id: 'reviews',
+    label: 'Mes avis',
+    icon: ReviewIcon,
+    count: reviews.value.length
+  },
+  {
+    id: 'photos',
+    label: 'Mes photos',
+    icon: PhotoIcon,
+    count: photos.value.length
+  },
+  {
+    id: 'activity',
+    label: 'Activité',
+    icon: ActivityIcon,
+    count: pendingChecks.value.length
+  },
+  {
+    id: 'settings',
+    label: 'Paramètres',
+    icon: SettingsIcon,
+    count: 0
+  }
+])
+
+// Statistiques calculées
+const reviewsCount = computed(() => reviews.value.length)
+const photosCount = computed(() => photos.value.length)
+const placesVisited = computed(() => {
+  const businessIds = new Set()
+  reviews.value.forEach(review => businessIds.add(review.business_id))
+  pendingChecks.value.forEach(check => businessIds.add(check.business_id))
+  return businessIds.size
 })
+
+// Gestionnaires d'événements
+const handleEditAvatar = () => {
+  // TODO: Implémenter l'édition d'avatar
+  console.log('Éditer avatar')
+}
+
+const handleShareProfile = () => {
+  // TODO: Implémenter le partage de profil
+  console.log('Partager profil')
+}
+
+const handleProfileUpdated = async () => {
+  await fetchProfile()
+}
+
+const handleEditReview = (review: Review) => {
+  navigateTo(`/place/${review.business_id}/review?edit=${review.id}`)
+}
+
+const handleDeleteReview = async (review: Review) => {
+  // TODO: Implémenter la suppression d'avis
+  console.log('Supprimer avis:', review.id)
+}
+
+const handleViewPhoto = (photo: Photo) => {
+  photoModal.value.currentPhoto = photo
+  photoModal.value.isOpen = true
+}
+
+const handleDeletePhoto = async (photo: Photo) => {
+  // TODO: Implémenter la suppression de photo
+  console.log('Supprimer photo:', photo.id)
+}
+
+const handleViewBusiness = (business: any) => {
+  if (business?.id) {
+    navigateTo(`/place/${business.id}`)
+  }
+}
+
+const handleWriteReview = (check: Check) => {
+  navigateTo(`/place/${check.business_id}/review`)
+}
+
+const handleViewReview = (review: Review) => {
+  navigateTo(`/place/${review.business_id}#review-${review.id}`)
+}
+
+const handleDiscoverPlaces = () => {
+  navigateTo('/search')
+}
+
+// Charger les données au montage
+onMounted(async () => {
+  if (user.value) {
+    await Promise.all([
+      fetchProfile(),
+      fetchReviews(),
+      fetchPhotos(),
+      fetchPendingChecks()
+    ])
+  }
+})
+
+// Surveiller les changements d'utilisateur
+watch(user, async (newUser) => {
+  if (newUser) {
+    await Promise.all([
+      fetchProfile(),
+      fetchReviews(),
+      fetchPhotos(),
+      fetchPendingChecks()
+    ])
+  }
+}, { immediate: true })
 </script>

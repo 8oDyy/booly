@@ -7,7 +7,7 @@
     <ProFeaturesSection />
     
     <!-- Pricing Section -->
-    <ProPricingSection />
+    <ProPricingSection @open-login="handleOpenLogin" />
     
     <!-- Benefits Section -->
     <ProBenefitsSection />
@@ -24,6 +24,15 @@
 </template>
 
 <script setup lang="ts">
+// Gestion des modals de connexion via AppHeader global
+const { openLoginModal } = useAppHeader()
+
+// Fonction de debug pour l'ouverture du modal
+const handleOpenLogin = () => {
+  console.log('🔧 handleOpenLogin appelé dans landingPro')
+  openLoginModal()
+}
+
 // Configuration de la page
 definePageMeta({
   title: 'Booly Pro - Développez votre activité avec des avis authentiques',

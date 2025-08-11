@@ -147,6 +147,7 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useAppHeader } from '~/composables/useAppHeader'
 import HeaderLogo from '~/components/ui/header/HeaderLogo.vue'
 import HeaderSearchMobile from '~/components/ui/header/HeaderSearchMobile.vue'
@@ -190,6 +191,11 @@ const {
   // Gestion de la déconnexion
   handleLogout
 } = useAppHeader()
+
+// Debug watcher pour isLoginOpen
+watch(isLoginOpen, (newValue, oldValue) => {
+  console.log('🔧 AppHeader - isLoginOpen changed:', { oldValue, newValue })
+}, { immediate: true })
 </script>
 
 <style scoped>

@@ -3,15 +3,20 @@ import Stripe from 'stripe';
 export default defineEventHandler(async (event) => {
   try {
     // Récupérer les données du corps de la requête
-    const { priceId, successUrl, cancelUrl, customerEmail, userId } = await readBody(event);
+    const { priceId, customerEmail, userId, planType } = await readBody(event);
 
     // Vérifier que les données requises sont présentes
-    if (!priceId || !successUrl || !cancelUrl) {
+    if (!priceId || !userId || !planType) {
       return createError({
         statusCode: 400,
-        message: 'Missing required parameters'
+        message: 'Missing required parameters: priceId, userId, and planType are required'
       });
     }
+
+    // URLs de redirection (dynamiques basées sur l'environnement)
+    const baseUrl = process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const successUrl = `${baseUrl}/pro/dashboard?success=true&plan=${planType}`;
+    const cancelUrl = `${baseUrl}/pricing?canceled=true`;
 
     // Vérifier que la clé Stripe est configurée
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;

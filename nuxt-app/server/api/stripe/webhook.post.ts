@@ -70,22 +70,39 @@ export default defineEventHandler(async (event) => {
         }
   
         const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-  
+        const priceId = subscription.items.data[0].price.id
+
+        // Déterminer le type de plan basé sur le price_id
+        let planType = 'basic' // Valeur en minuscules selon la contrainte DB
+        const premiumPriceId = process.env.STRIPE_PRICE_PREMIUM || 'price_1RuwClLgo7pFtFvcYNDgjADz'
+        if (priceId === premiumPriceId || priceId === 'price_1RuwClLgo7pFtFvcYNDgjADz') {
+          planType = 'premium' // Valeur en minuscules selon la contrainte DB
+        }
+
+        // Gestion sécurisée de current_period_end
+        const currentPeriodEnd = (subscription as any).current_period_end
+        const currentPeriodEndDate = currentPeriodEnd 
+          ? new Date(currentPeriodEnd * 1000).toISOString()
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 jours par défaut
+
         console.log('📦 Subscription récupérée depuis Stripe:', {
           status: subscription.status,
-          current_period_end: subscription.items.data[0].current_period_end,
+          priceId: priceId,
+          planType: planType,
+          current_period_end: currentPeriodEnd,
+          current_period_end_date: currentPeriodEndDate,
         })
-  
+
         const { error: upsertError } = await supabase
           .from('subscriptions')
           .upsert({
             user_id: profile.id,
             stripe_customer_id: customerId,
             stripe_subscription_id: subscription.id,
-            stripe_price_id: subscription.items.data[0].price.id,
-            plan_type: 'premium',
+            stripe_price_id: priceId,
+            plan_type: planType,
             status: subscription.status,
-            current_period_end: new Date(subscription.items.data[0].current_period_end * 1000).toISOString(),
+            current_period_end: currentPeriodEndDate,
           })
   
         if (upsertError) {
@@ -99,17 +116,24 @@ export default defineEventHandler(async (event) => {
       else if (stripeEvent.type === 'customer.subscription.updated') {
         const subscription = stripeEvent.data.object as Stripe.Subscription
   
+        // Gestion sécurisée de current_period_end pour les mises à jour
+        const currentPeriodEnd = (subscription as any).current_period_end
+        const currentPeriodEndDate = currentPeriodEnd 
+          ? new Date(currentPeriodEnd * 1000).toISOString()
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 jours par défaut
+
         console.log('🔄 customer.subscription.updated:', {
           id: subscription.id,
           status: subscription.status,
-          current_period_end: subscription.items.data[0].current_period_end
+          current_period_end: currentPeriodEnd,
+          current_period_end_date: currentPeriodEndDate
         })
-  
+
         const { error: updateError } = await supabase
           .from('subscriptions')
           .update({
             status: subscription.status,
-            current_period_end: new Date(subscription.items.data[0].current_period_end * 1000).toISOString(),
+            current_period_end: currentPeriodEndDate,
           })
           .eq('stripe_subscription_id', subscription.id)
   

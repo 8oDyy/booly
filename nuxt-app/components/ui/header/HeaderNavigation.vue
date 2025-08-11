@@ -8,9 +8,9 @@
       Catégories
     </NuxtLink>
     <NuxtLink 
-      to="/pro" 
+      to="/landingPro" 
       class="nav-link nav-link-pro" 
-      :class="{ 'nav-link-active': $route.path.startsWith('/pro') }"
+      :class="{ 'nav-link-active': $route.path.startsWith('/landingPro') }"
     >
       Booly Pro
     </NuxtLink>

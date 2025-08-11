@@ -29,4 +29,19 @@
 <script setup lang="ts">
 // Cette page utilise maintenant des composants modulaires
 // Tous les composants sont dans le dossier components/landing/
+
+// Gestion de l'ouverture automatique du modal de connexion
+const route = useRoute()
+const { openLoginModal } = useAppHeader()
+
+// Vérifier si on doit ouvrir le modal de connexion
+onMounted(() => {
+  if (route.query.login === 'true') {
+    console.log('🔧 Paramètre login=true détecté, ouverture du modal')
+    // Petit délai pour s'assurer que les composants sont montés
+    nextTick(() => {
+      openLoginModal()
+    })
+  }
+})
 </script>

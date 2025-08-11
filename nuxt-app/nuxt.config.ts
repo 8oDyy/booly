@@ -19,6 +19,8 @@ export default defineNuxtConfig({
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
       googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      stripePriceBasic: process.env.STRIPE_PRICE_BASIC,
+      stripePricePremium: process.env.STRIPE_PRICE_PREMIUM,
     },
   },
   

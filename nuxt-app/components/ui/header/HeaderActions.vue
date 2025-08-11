@@ -81,6 +81,22 @@
             Mon profil
           </NuxtLink>
           
+          <!-- Dashboard Pro - seulement si abonné -->
+          <NuxtLink 
+            v-if="hasActiveSubscription" 
+            to="/pro/dashboard" 
+            class="dropdown-item dropdown-item-pro" 
+            @click="$emit('close-user-dropdown')"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Dashboard Pro
+          </NuxtLink>
+          
           <NuxtLink to="/reviews" class="dropdown-item" @click="$emit('close-user-dropdown')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -122,6 +138,8 @@
 </template>
 
 <script setup lang="ts">
+const { hasActiveSubscription } = useSubscription()
+
 interface Props {
   user: any
   userDisplayName: string
@@ -360,6 +378,16 @@ defineEmits<Emits>()
 
 .dropdown-item-danger:hover {
   background: #fef2f2;
+}
+
+.dropdown-item-pro {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.dropdown-item-pro:hover {
+  background: #eff6ff;
+  color: #1e40af;
 }
 
 .dropdown-divider {
