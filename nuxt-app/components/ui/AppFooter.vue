@@ -34,13 +34,13 @@
               &copy; {{ currentYear }} Booly. Tous droits réservés.
             </p>
             <div class="flex items-center gap-6">
-              <NuxtLink to="footer_link/terms" class="text-sm text-blue-600/70 hover:text-blue-900 font-inter">
+              <NuxtLink to="/footer_link/terms" class="text-sm text-blue-600/70 hover:text-blue-900 font-inter">
                 Conditions d'utilisation
               </NuxtLink>
-              <NuxtLink to="footer_link/privacy" class="text-sm text-blue-600/70 hover:text-blue-900 font-inter">
+              <NuxtLink to="/footer_link/privacy" class="text-sm text-blue-600/70 hover:text-blue-900 font-inter">
                 Confidentialité
               </NuxtLink>
-              <NuxtLink to="footer_link/legal" class="text-sm text-blue-600/70 hover:text-blue-900 font-inter">
+              <NuxtLink to="/footer_link/legal" class="text-sm text-blue-600/70 hover:text-blue-900 font-inter">
                 Mentions légales
               </NuxtLink>
             </div>
@@ -55,17 +55,17 @@
     {
       label: 'Ressources',
       children: [
-        { label: 'À propos', to: 'footer_link/about' },
-        { label: 'Comment ça marche', to: 'footer_link/how-it-works' },
+        { label: 'À propos', to: '/footer_link/about' },
+        { label: 'Comment ça marche', to: '/footer_link/how-it-works' },
         { label: 'Pour les professionnels', to: '/landingPro' }
       ]
     },
     {
       label: 'Aide',
       children: [
-        { label: 'FAQ', to: 'footer_link/faq' },
-        { label: 'Contact', to: 'footer_link/contact' },
-        { label: 'Support', to: 'footer_link/support' }
+        { label: 'FAQ', to: '/footer_link/faq' },
+        { label: 'Contact', to: '/footer_link/contact' },
+        { label: 'Support', to: '/footer_link/support' }
       ]
     }
   ]
