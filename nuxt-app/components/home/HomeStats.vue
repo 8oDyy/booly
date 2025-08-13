@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Period, Range, Stat } from '~/types/index'
+import { randomInt } from '~/utils'
 
 const props = defineProps<{
   period: Period

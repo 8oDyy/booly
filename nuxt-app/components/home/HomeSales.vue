@@ -2,6 +2,7 @@
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { Period, Range, Sale } from '~/types/index'
+import { randomInt, randomFrom } from '~/utils'
 
 const props = defineProps<{
   period: Period
