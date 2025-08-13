@@ -44,8 +44,8 @@
             </div>
             
             <div class="flex items-start">
-              <div class="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mt-1">
-                <UIcon name="i-heroicons-check" class="w-4 h-4 text-emerald-600" />
+              <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                <UIcon name="i-heroicons-check" class="w-4 h-4 text-blue-600" />
               </div>
               <div class="ml-4">
                 <h3 class="font-semibold text-gray-900 mb-1">Communauté locale</h3>
