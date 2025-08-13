@@ -4,14 +4,14 @@
       <div class="grid lg:grid-cols-2 gap-16 items-center">
         <!-- Left content -->
         <div>
-          <div class="inline-flex items-center px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium mb-6">
-            <UIcon name="i-heroicons-shield-check" class="w-4 h-4 mr-2" />
+          <div class="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
+            <UIcon name="i-heroicons-shield-check" class="w-4 h-4 mr-2 text-blue-600" />
             Avis 100% authentiques
           </div>
           
           <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
             Des avis que vous pouvez 
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
               vraiment faire confiance
             </span>
           </h2>
@@ -24,8 +24,8 @@
           <!-- Features list -->
           <div class="space-y-4 mb-8">
             <div class="flex items-start">
-              <div class="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mt-1">
-                <UIcon name="i-heroicons-check" class="w-4 h-4 text-emerald-600" />
+              <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                <UIcon name="i-heroicons-check" class="w-4 h-4 text-blue-600" />
               </div>
               <div class="ml-4">
                 <h3 class="font-semibold text-gray-900 mb-1">Scan NFC/QR obligatoire</h3>
@@ -34,8 +34,8 @@
             </div>
             
             <div class="flex items-start">
-              <div class="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mt-1">
-                <UIcon name="i-heroicons-check" class="w-4 h-4 text-emerald-600" />
+              <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                <UIcon name="i-heroicons-check" class="w-4 h-4 text-blue-600" />
               </div>
               <div class="ml-4">
                 <h3 class="font-semibold text-gray-900 mb-1">Géolocalisation vérifiée</h3>
@@ -65,9 +65,10 @@
             </UButton>
             
             <UButton
-              to="/how-it-works"
+              to="footer_link/how-it-works"
               variant="outline"
               size="lg"
+              color="secondary"
               class="border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               Comment ça marche ?

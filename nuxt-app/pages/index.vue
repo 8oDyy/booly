@@ -27,6 +27,11 @@
 </template>
 
 <script setup lang="ts">
+
+useSeoMeta({
+  title: 'Accueil - Booly',
+  description: 'Découvrez Booly, la plateforme de partage d\'avis sur les commerces locaux'
+})
 // Cette page utilise maintenant des composants modulaires
 // Tous les composants sont dans le dossier components/landing/
 

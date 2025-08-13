@@ -95,7 +95,8 @@
           to="/search"
           variant="outline"
           size="lg"
-          class="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+          color="secondary"
+          class="border-blue-600 text-blue-600 hover:bg-blue-50"
         >
           Voir tous les commerces
           <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 ml-2" />
@@ -119,33 +120,83 @@ const businesses = ref<BusinessWithReviews[]>([])
 onMounted(async () => {
   loading.value = true
   try {
+    console.log('🏢 PopularBusinesses: Chargement des établissements...')
     await fetchCategories()
     
-    // Get popular businesses with high ratings
+    // Get all businesses (no rating filter to include all establishments)
     const result = await searchBusinesses(
-      { minRating: 4.0, sortBy: 'rating', sortOrder: 'desc' },
+      { sortBy: 'created_at', sortOrder: 'desc' }, // Trier par date de création, plus récents en premier
       1,
-      6
+      12 // Récupérer plus d'établissements pour avoir plus de choix
     )
     businesses.value = result.data
+    console.log('✅ PopularBusinesses: Établissements chargés:', businesses.value.length)
+    console.log('🔍 PopularBusinesses: Premier établissement (exemple):', businesses.value[0])
   } catch (error) {
-    console.error('Erreur lors du chargement des commerces:', error)
+    console.error('❌ PopularBusinesses: Erreur lors du chargement des commerces populaires:', error)
   } finally {
     loading.value = false
+    console.log('🏁 PopularBusinesses: Chargement terminé, loading =', loading.value)
   }
 })
 
 // Get top 6 businesses sorted by rating and review count
 const displayBusinesses = computed(() => {
-  return businesses.value
-    .filter((business: BusinessWithReviews) => business.average_rating && business.average_rating > 4.0)
+  console.log('📊 PopularBusinesses: Calcul displayBusinesses, total businesses:', businesses.value.length)
+  
+  if (businesses.value.length === 0) {
+    console.log('📊 PopularBusinesses: Aucun établissement disponible')
+    return []
+  }
+
+  // Trier tous les établissements par priorité :
+  // 1. Ceux avec des notes élevées
+  // 2. Ceux avec des avis (même sans note moyenne)
+  // 3. Ceux sans avis par date de création
+  const sortedBusinesses = businesses.value
+    .slice() // Copie pour ne pas modifier l'original
     .sort((a: BusinessWithReviews, b: BusinessWithReviews) => {
-      // Sort by rating first, then by review count
-      const ratingDiff = (b.average_rating || 0) - (a.average_rating || 0)
-      if (ratingDiff !== 0) return ratingDiff
-      return (b.computed_review_count || 0) - (a.computed_review_count || 0)
+      // Priorité 1: Établissements avec des notes
+      const aHasRating = a.average_rating && a.average_rating > 0
+      const bHasRating = b.average_rating && b.average_rating > 0
+      
+      if (aHasRating && !bHasRating) return -1
+      if (!aHasRating && bHasRating) return 1
+      
+      // Si les deux ont des notes, trier par note puis par nombre d'avis
+      if (aHasRating && bHasRating) {
+        const ratingDiff = (b.average_rating || 0) - (a.average_rating || 0)
+        if (ratingDiff !== 0) return ratingDiff
+        return (b.computed_review_count || 0) - (a.computed_review_count || 0)
+      }
+      
+      // Priorité 2: Établissements avec des avis (même sans note moyenne)
+      const aHasReviews = (a.computed_review_count || 0) > 0
+      const bHasReviews = (b.computed_review_count || 0) > 0
+      
+      if (aHasReviews && !bHasReviews) return -1
+      if (!aHasReviews && bHasReviews) return 1
+      
+      // Si les deux ont des avis, trier par nombre d'avis
+      if (aHasReviews && bHasReviews) {
+        return (b.computed_review_count || 0) - (a.computed_review_count || 0)
+      }
+      
+      // Priorité 3: Trier par date de création (plus récent en premier)
+      const aDate = new Date(a.created_at || '').getTime()
+      const bDate = new Date(b.created_at || '').getTime()
+      return bDate - aDate
     })
-    .slice(0, 6)
+
+  const result = sortedBusinesses.slice(0, 6)
+  
+  console.log('📊 PopularBusinesses: Établissements sélectionnés:', result.length)
+  console.log('📊 PopularBusinesses: Détail des établissements:')
+  result.forEach((business, index) => {
+    console.log(`  ${index + 1}. ${business.name} - Note: ${business.average_rating || 'N/A'} - Avis: ${business.computed_review_count || 0}`)
+  })
+
+  return result
 })
 
 // Get category name by ID

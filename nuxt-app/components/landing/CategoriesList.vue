@@ -16,7 +16,7 @@
         <NuxtLink
           v-for="category in displayCategories"
           :key="category.id"
-          :to="`/categories/${category.slug}`"
+          :to="`/search?category=${category.id}`"
           class="group"
         >
           <div class="bg-white rounded-xl p-4 text-center hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-blue-200 hover:-translate-y-1">

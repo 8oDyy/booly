@@ -24,7 +24,7 @@
             class="flex-shrink-0 w-64"
           >
             <NuxtLink
-              :to="`/categories/${category.slug}`"
+              :to="`/search?category=${category.id}`"
               class="group block"
             >
               <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 h-full">

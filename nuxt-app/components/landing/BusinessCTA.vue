@@ -58,7 +58,7 @@
           <!-- CTA buttons -->
           <div class="flex flex-col sm:flex-row gap-4">
             <UButton
-              to="/business/register"
+              to="/landingPro"
               size="xl"
               class="bg-white text-blue-600 hover:bg-gray-50 font-semibold shadow-lg"
             >
