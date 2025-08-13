@@ -21,7 +21,7 @@
               Si vous avez rencontré un problème ou si vous avez des questions, n'hésitez pas à nous contacter.
             </p>
             <div class="space-y-4 w-full">
-              <UButton to="/business" color="primary" block>
+              <UButton to="/landingPro" color="primary" block>
                 Retour aux plans tarifaires
               </UButton>
               <UButton to="/" color="gray" variant="outline" block>

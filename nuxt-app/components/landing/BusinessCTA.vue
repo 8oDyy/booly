@@ -65,16 +65,6 @@
               Créer mon profil pro
               <UIcon name="i-heroicons-arrow-right" class="w-5 h-5 ml-2" />
             </UButton>
-            
-            <UButton
-              to="/business/demo"
-              variant="outline"
-              size="xl"
-              class="border-white/30 text-white hover:bg-white/10"
-            >
-              Voir la démo
-              <UIcon name="i-heroicons-play" class="w-5 h-5 ml-2" />
-            </UButton>
           </div>
           
           <!-- Pricing info -->

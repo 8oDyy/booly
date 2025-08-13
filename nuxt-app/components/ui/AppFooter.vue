@@ -57,7 +57,7 @@
       children: [
         { label: 'À propos', to: 'footer_link/about' },
         { label: 'Comment ça marche', to: 'footer_link/how-it-works' },
-        { label: 'Pour les professionnels', to: '/business' }
+        { label: 'Pour les professionnels', to: '/landingPro' }
       ]
     },
     {

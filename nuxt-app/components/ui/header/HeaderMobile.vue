@@ -21,9 +21,9 @@
           Rechercher
         </NuxtLink>
         <NuxtLink 
-          to="/business" 
+          to="/landingPro" 
           class="mobile-nav-link mobile-nav-link-pro" 
-          :class="{ 'mobile-nav-link-active': $route.path.startsWith('/business') }" 
+          :class="{ 'mobile-nav-link-active': $route.path.startsWith('/landingPro') }" 
           @click="$emit('close-mobile-menu')"
         >
           Booly Pro

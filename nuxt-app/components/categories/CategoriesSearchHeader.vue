@@ -59,6 +59,7 @@ const handleSearch = () => {
   emit('search', searchQuery.value)
 }
 
+
 // SEO
 useSeoMeta({
   title: 'Toutes les catégories - Booly',

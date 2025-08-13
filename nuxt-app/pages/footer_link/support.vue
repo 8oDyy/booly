@@ -44,7 +44,7 @@
         <div class="bg-blue-50 p-4 rounded-lg">
           <h3 class="text-lg font-bold mb-2">Support prioritaire pour les professionnels</h3>
           <p class="mb-4">Les professionnels inscrits sur notre plateforme bénéficient d'un support prioritaire.</p>
-          <UButton to="/business" color="primary">
+          <UButton to="/landingPro" color="primary">
             Espace professionnel
           </UButton>
         </div>
