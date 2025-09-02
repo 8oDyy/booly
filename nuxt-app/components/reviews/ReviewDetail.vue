@@ -186,7 +186,7 @@ const reportOptions = [
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-white dark:bg-gray-900">
+  <div class="flex flex-col h-full w-full bg-white dark:bg-gray-900">
     <!-- En-tête -->
     <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-lg font-semibold text-highlighted">Détail de l'avis</h2>

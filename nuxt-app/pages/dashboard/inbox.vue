@@ -144,14 +144,16 @@ watch(filteredReviews, () => {
   </UDashboardPanel>
 
   <!-- Détail de l'avis sélectionné -->
-  <ReviewDetail 
-    v-if="selectedReview" 
-    :review="selectedReview" 
-    @close="selectedReview = null"
-    @updated="loadReviews"
-  />
-  <div v-else class="hidden lg:flex flex-1 items-center justify-center">
-    <UIcon name="i-lucide-message-circle" class="size-32 text-dimmed" />
+  <div class="flex-1 min-w-0">
+    <ReviewDetail 
+      v-if="selectedReview" 
+      :review="selectedReview" 
+      @close="selectedReview = null"
+      @updated="loadReviews"
+    />
+    <div v-else class="hidden lg:flex h-full items-center justify-center">
+      <UIcon name="i-lucide-message-circle" class="size-32 text-dimmed" />
+    </div>
   </div>
 
   <!-- Version mobile -->
