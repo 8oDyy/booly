@@ -1,29 +1,18 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useChecksManagement } from '~/composables/dashboard/useChecksManagement'
 import { useBusinesses } from '~/composables/useBusinesses'
 
-interface Props {
-  open: boolean
-}
-
 interface Emits {
-  (e: 'update:open', value: boolean): void
   (e: 'created'): void
 }
 
-const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { createScanTag } = useChecksManagement()
 const { searchBusinesses } = useBusinesses()
 
-const isOpen = computed({
-  get: () => props.open,
-  set: (value) => emit('update:open', value)
-})
-
-// État du formulaire
+  // État du formulaire
 const form = ref({
   code: '',
   label: '',
@@ -40,16 +29,8 @@ const selectedBusiness = ref<{id: string, name: string} | null>(null)
 // Charger les établissements de l'utilisateur
 const loadBusinesses = async () => {
   try {
-    const result = await searchBusinesses({}, 1, 50)
-    businesses.value = result.data.map(business => ({
-      id: business.id,
-      name: business.name
-    }))
-    
-    // Sélectionner le premier établissement par défaut
-    if (businesses.value.length > 0) {
-      form.value.businessId = businesses.value[0].id
-    }
+    const result = businesses.value
+    console.log(result)
   } catch (err) {
     console.error('Erreur lors du chargement des établissements:', err)
   }
@@ -81,8 +62,25 @@ const typeOptions = [
 // Validation du formulaire
 const isFormValid = computed(() => {
   return form.value.code.trim() !== '' && 
-         form.value.businessId !== '' &&
-         (form.value.type === 'QR' || form.value.type === 'NFC')
+         form.value.label.trim() !== '' && 
+         form.value.businessId !== ''
+})
+
+// Réinitialiser le formulaire
+const resetForm = () => {
+  form.value = {
+    code: '',
+    label: '',
+    type: 'QR',
+    businessId: ''
+  }
+  selectedBusiness.value = null
+  error.value = ''
+}
+
+// Charger les données au montage
+onMounted(() => {
+  loadBusinesses()
 })
 
 // Soumettre le formulaire
@@ -101,15 +99,8 @@ const handleSubmit = async () => {
     })
 
     // Réinitialiser le formulaire
-    form.value = {
-      code: '',
-      label: '',
-      type: 'QR',
-      businessId: businesses.value[0]?.id || ''
-    }
-
+    resetForm()
     emit('created')
-    emit('update:open', false)
   } catch (err) {
     console.error('Erreur lors de la création du scan tag:', err)
     error.value = 'Erreur lors de la création du scan tag'
@@ -118,29 +109,16 @@ const handleSubmit = async () => {
   }
 }
 
-// Charger les établissements quand le modal s'ouvre
-watch(() => props.open, (newValue) => {
-  if (newValue) {
-    loadBusinesses()
-    generateRandomCode() // Générer un code par défaut
-  }
-})
+
 </script>
 
 <template>
-  <UModal v-model="isOpen" :ui="{ wrapper: 'sm:max-w-md' }">
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Créer un Scan Tag
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            Créer un nouveau Scan Tag
           </h3>
-          <UButton
-            icon="i-lucide-x"
-            variant="ghost"
-            size="sm"
-            @click="isOpen = false"
-          />
         </div>
       </template>
 
@@ -152,7 +130,7 @@ watch(() => props.open, (newValue) => {
           </label>
           <USelect
             v-model="form.businessId"
-            :options="businesses"
+            :options="businessOptions"
             placeholder="Sélectionner un établissement"
             :disabled="businesses.length === 0"
           />
@@ -216,25 +194,6 @@ watch(() => props.open, (newValue) => {
           variant="soft"
           :title="error"
         />
-
-        <!-- Actions -->
-        <div class="flex justify-end gap-2 pt-4">
-          <UButton
-            type="button"
-            variant="ghost"
-            @click="isOpen = false"
-          >
-            Annuler
-          </UButton>
-          <UButton
-            type="submit"
-            :loading="pending"
-            :disabled="!isFormValid"
-          >
-            Créer le Tag
-          </UButton>
-        </div>
       </form>
     </UCard>
-  </UModal>
 </template>

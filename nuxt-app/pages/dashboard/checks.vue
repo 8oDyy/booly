@@ -136,20 +136,16 @@ const openCreateModal = () => {
       </template>
 
       <template #right>
-        <UButton
-          icon="i-lucide-plus"
-          size="sm"
-          @click="openCreateModal"
-        >
-          Nouveau Tag
-        </UButton>
-        
-        <UTabs
-          v-model="selectedTab"
-          :items="tabItems"
-          :content="false"
-          size="xs"
-        />
+        <UModal>
+          <UButton
+            icon="i-lucide-plus"
+            size="sm"
+            label="Nouveau Tag"
+          />
+          <template #content>
+            <ScanTagModal/>
+          </template>
+        </UModal>
       </template>
     </UDashboardNavbar>
     
@@ -199,12 +195,6 @@ const openCreateModal = () => {
   <div v-else class="hidden lg:flex flex-1 items-center justify-center">
     <UIcon name="i-lucide-qr-code" class="size-32 text-dimmed" />
   </div>
-
-  <!-- Modal de création de scan tag -->
-  <ScanTagModal
-    v-model:open="isCreateModalOpen"
-    @created="loadData"
-  />
 
   <!-- Version mobile -->
   <ClientOnly>

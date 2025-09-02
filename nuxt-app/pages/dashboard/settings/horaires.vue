@@ -4,7 +4,7 @@ definePageMeta({
 })
 
 const user = useSupabaseUser()
-const { business, loading, error } = useBusinessManagement()
+const { business, loading, error, saveOpeningHours, getOpeningHours } = useBusinessManagement()
 const toast = useToast()
 
 // Structure pour les horaires d'ouverture
@@ -39,6 +39,22 @@ const defaultHours: OpeningHours = {
 
 const openingHours = ref<OpeningHours>({ ...defaultHours })
 const pending = ref(false)
+
+// Charger les horaires existants depuis Supabase
+const loadExistingHours = () => {
+  if (business.value) {
+    const savedHours = getOpeningHours()
+    if (savedHours) {
+      console.log('🕒 Horaires chargés depuis Supabase:', savedHours)
+      openingHours.value = { ...savedHours }
+    }
+  }
+}
+
+// Charger les horaires quand l'entreprise change
+watch(business, () => {
+  loadExistingHours()
+}, { immediate: true })
 
 // Fonction pour copier les horaires d'un jour à tous les autres
 function copyToAllDays(sourceDay: string) {
@@ -109,18 +125,27 @@ async function saveHours() {
     return
   }
 
+  if (!business.value) {
+    toast.add({
+      title: 'Erreur',
+      description: 'Vous devez d\'abord créer votre établissement.',
+      icon: 'i-lucide-alert-circle',
+      color: 'error'
+    })
+    return
+  }
+
   try {
     pending.value = true
     
-    // Pour l'instant, on stocke les horaires dans une structure JSON
-    // À adapter selon la structure de votre base de données
-    console.log('Horaires à sauvegarder:', openingHours.value)
+    // Sauvegarder les horaires via Supabase
+    await saveOpeningHours(openingHours.value)
     
     toast.add({
-      title: 'Information',
-      description: 'Sauvegarde des horaires - Fonctionnalité à implémenter avec la structure BDD.',
-      icon: 'i-lucide-info',
-      color: 'info'
+      title: 'Succès',
+      description: 'Horaires d\'ouverture sauvegardés avec succès.',
+      icon: 'i-lucide-check',
+      color: 'success'
     })
 
   } catch (err) {
