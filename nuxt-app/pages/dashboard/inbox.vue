@@ -110,9 +110,9 @@ watch(filteredReviews, () => {
 <template>
   <UDashboardPanel
     id="reviews-1"
-    :default-size="30"
-    :min-size="25"
-    :max-size="40"
+    :default-size="60"
+    :min-size="40"
+    :max-size="80"
     resizable
   >
     <UDashboardNavbar title="Avis Clients">

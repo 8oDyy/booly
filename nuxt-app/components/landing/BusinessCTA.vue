@@ -57,6 +57,7 @@
           
           <!-- CTA buttons -->
           <div class="flex flex-col sm:flex-row gap-4">
+            
             <UButton
               to="/landingPro"
               size="xl"

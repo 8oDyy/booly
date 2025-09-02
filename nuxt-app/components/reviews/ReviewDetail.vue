@@ -349,71 +349,64 @@ const reportOptions = [
     <!-- Actions en bas -->
     <div class="border-t border-gray-200 dark:border-gray-800 p-4">
       <div class="flex justify-between">
-        <UButton
-          variant="outline"
-          color="error"
-          size="sm"
-          @click="isReportModalOpen = true"
-        >
-          <UIcon name="i-lucide-flag" class="size-4 mr-2" />
-          Signaler
-        </UButton>
-        
-        <UButton
-          variant="outline"
-          @click="emit('close')"
-        >
-          Fermer
-        </UButton>
+        <UModal v-model="isReportModalOpen">
+          <UButton
+            variant="outline"
+            color="error"
+            size="sm"
+            @click="isReportModalOpen = true"
+          >
+            <UIcon name="i-lucide-flag" class="size-4 mr-2" />
+            Signaler
+          </UButton>
+          <template #content>
+            <UCard>
+              <template #header>
+                <h3 class="text-lg font-semibold">Signaler cet avis</h3>
+              </template>
+
+              <div class="space-y-4">
+                <p class="text-sm text-muted">
+                  Pourquoi souhaitez-vous signaler cet avis ? Cette action nous aidera à maintenir la qualité de la plateforme.
+                </p>
+
+                <USelect
+                  v-model="reportReason"
+                  :options="reportOptions"
+                  placeholder="Sélectionnez une raison"
+                />
+
+                <UTextarea
+                  v-if="reportReason === 'other'"
+                  v-model="reportReason"
+                  placeholder="Précisez la raison du signalement..."
+                  :rows="3"
+                />
+              </div>
+
+              <template #footer>
+                <div class="flex justify-end gap-2">
+                  <UButton
+                  variant="outline"
+                  @click="isReportModalOpen = false"
+                  :disabled="isReporting"
+                >
+                  Annuler
+                </UButton>
+                <UButton
+                  color="error"
+                  @click="submitReport"
+                  :loading="isReporting"
+                  :disabled="!reportReason"
+                >
+                  Signaler
+                </UButton>
+              </div>
+            </template>
+          </UCard>
+          </template>
+        </UModal>
       </div>
-    </div>
-
-    <!-- Modal de signalement -->
-    <UModal v-model="isReportModalOpen">
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold">Signaler cet avis</h3>
-        </template>
-
-        <div class="space-y-4">
-          <p class="text-sm text-muted">
-            Pourquoi souhaitez-vous signaler cet avis ? Cette action nous aidera à maintenir la qualité de la plateforme.
-          </p>
-
-          <USelect
-            v-model="reportReason"
-            :options="reportOptions"
-            placeholder="Sélectionnez une raison"
-          />
-
-          <UTextarea
-            v-if="reportReason === 'other'"
-            v-model="reportReason"
-            placeholder="Précisez la raison du signalement..."
-            :rows="3"
-          />
-        </div>
-
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton
-              variant="outline"
-              @click="isReportModalOpen = false"
-              :disabled="isReporting"
-            >
-              Annuler
-            </UButton>
-            <UButton
-              color="error"
-              @click="submitReport"
-              :loading="isReporting"
-              :disabled="!reportReason"
-            >
-              Signaler
-            </UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
+    </div>   
   </div>
 </template>
