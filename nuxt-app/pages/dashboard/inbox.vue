@@ -4,68 +4,123 @@ definePageMeta({
   layout: 'dashboard'
 })
 
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import type { Mail } from '~/types/index'
+import { useReviewsManagement, type ReviewWithDetails } from '~/composables/dashboard/useReviewsManagement'
+import ReviewsList from '~/components/reviews/ReviewsList.vue'
+import ReviewDetail from '~/components/reviews/ReviewDetail.vue'
 
 const tabItems = [{
-  label: 'All',
+  label: 'Tous',
   value: 'all'
 }, {
-  label: 'Unread',
-  value: 'unread'
+  label: 'Sans réponse',
+  value: 'no-response'
+}, {
+  label: 'Avec réponse',
+  value: 'with-response'
 }]
+
 const selectedTab = ref('all')
 
-const { data: mails } = await useFetch<Mail[]>('/api/mails', { default: () => [] })
+const { 
+  getAllReviews, 
+  respondToReview, 
+  updateResponse, 
+  deleteResponse, 
+  reportReview, 
+  getReviewsStats 
+} = useReviewsManagement()
 
-// Filter mails based on the selected tab
-const filteredMails = computed(() => {
-  if (selectedTab.value === 'unread') {
-    return mails.value.filter(mail => !!mail.unread)
-  }
+console.log('📄 Page inbox - Composable chargé')
 
-  return mails.value
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('lg')
+
+const selectedReview = ref<ReviewWithDetails | null>(null)
+const reviews = ref<ReviewWithDetails[]>([])
+const pending = ref(false)
+const error = ref(false)
+
+console.log('📄 Page inbox - Variables initialisées')
+
+// États de chargement
+const stats = ref({
+  total: 0,
+  withResponse: 0,
+  withoutResponse: 0,
+  averageRating: 0,
+  ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 })
 
-const selectedMail = ref<Mail | null>()
+// Charger les avis
+const loadReviews = async () => {
+  try {
+    pending.value = true
+    error.value = false
+    
+    const [reviewsData, statsData] = await Promise.all([
+      getAllReviews(),
+      getReviewsStats()
+    ])
+    
+    reviews.value = reviewsData
+    stats.value = statsData
+  } catch (err) {
+    console.error('Erreur lors du chargement des avis:', err)
+    error.value = true
+  } finally {
+    pending.value = false
+  }
+}
 
-const isMailPanelOpen = computed({
+// Charger les données au montage
+onMounted(loadReviews)
+
+// Filtrer les avis selon l'onglet sélectionné
+const filteredReviews = computed(() => {
+  if (selectedTab.value === 'no-response') {
+    return reviews.value.filter(review => !review.hasResponse)
+  }
+  if (selectedTab.value === 'with-response') {
+    return reviews.value.filter(review => review.hasResponse)
+  }
+  return reviews.value
+})
+
+const isReviewPanelOpen = computed({
   get() {
-    return !!selectedMail.value
+    return !!selectedReview.value
   },
   set(value: boolean) {
     if (!value) {
-      selectedMail.value = null
+      selectedReview.value = null
     }
   }
 })
 
-// Reset selected mail if it's not in the filtered mails
-watch(filteredMails, () => {
-  if (!filteredMails.value.find(mail => mail.id === selectedMail.value?.id)) {
-    selectedMail.value = null
+// Reset selected review if it's not in the filtered reviews
+watch(filteredReviews, () => {
+  if (!filteredReviews.value.find(review => review.id === selectedReview.value?.id)) {
+    selectedReview.value = null
   }
 })
-
-const breakpoints = useBreakpoints(breakpointsTailwind)
-const isMobile = breakpoints.smaller('lg')
 </script>
 
 <template>
   <UDashboardPanel
-    id="inbox-1"
-    :default-size="25"
-    :min-size="20"
-    :max-size="30"
+    id="reviews-1"
+    :default-size="30"
+    :min-size="25"
+    :max-size="40"
     resizable
   >
-    <UDashboardNavbar title="Inbox">
+    <UDashboardNavbar title="Avis Clients">
       <template #leading>
         <UDashboardSidebarCollapse />
       </template>
       <template #trailing>
-        <UBadge :label="filteredMails.length" variant="subtle" />
+        <UBadge :label="filteredReviews.length" variant="subtle" />
       </template>
 
       <template #right>
@@ -77,18 +132,38 @@ const isMobile = breakpoints.smaller('lg')
         />
       </template>
     </UDashboardNavbar>
-    <InboxList v-model="selectedMail" :mails="filteredMails" />
+    
+    <!-- Liste des avis -->
+    <ReviewsList 
+      v-model="selectedReview" 
+      :reviews="filteredReviews" 
+      :pending="pending"
+      :error="error"
+      @refresh="loadReviews"
+    />
   </UDashboardPanel>
 
-  <InboxMail v-if="selectedMail" :mail="selectedMail" @close="selectedMail = null" />
+  <!-- Détail de l'avis sélectionné -->
+  <ReviewDetail 
+    v-if="selectedReview" 
+    :review="selectedReview" 
+    @close="selectedReview = null"
+    @updated="loadReviews"
+  />
   <div v-else class="hidden lg:flex flex-1 items-center justify-center">
-    <UIcon name="i-lucide-inbox" class="size-32 text-dimmed" />
+    <UIcon name="i-lucide-message-circle" class="size-32 text-dimmed" />
   </div>
 
+  <!-- Version mobile -->
   <ClientOnly>
-    <USlideover v-if="isMobile" v-model:open="isMailPanelOpen">
+    <USlideover v-if="isMobile" v-model:open="isReviewPanelOpen">
       <template #content>
-        <InboxMail v-if="selectedMail" :mail="selectedMail" @close="selectedMail = null" />
+        <ReviewDetail 
+          v-if="selectedReview" 
+          :review="selectedReview" 
+          @close="selectedReview = null"
+          @updated="loadReviews"
+        />
       </template>
     </USlideover>
   </ClientOnly>

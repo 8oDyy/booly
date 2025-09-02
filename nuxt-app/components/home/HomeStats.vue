@@ -1,67 +1,79 @@
 <script setup lang="ts">
-import type { Period, Range, Stat } from '~/types/index'
-import { randomInt } from '~/utils'
+import type { Period, Range } from '~/types/index'
+import { useDashboardStats } from '~/composables/dashboard/useDashboardStats'
 
 const props = defineProps<{
   period: Period
   range: Range
 }>()
 
-function formatCurrency(value: number): string {
-  return value.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  })
+interface DashboardStat {
+  title: string
+  icon: string
+  value: string | number
+  loading?: boolean
+  error?: boolean
 }
 
-const baseStats = [{
-  title: 'Customers',
-  icon: 'i-lucide-users',
-  minValue: 400,
-  maxValue: 1000,
-  minVariation: -15,
-  maxVariation: 25
-}, {
-  title: 'Conversions',
-  icon: 'i-lucide-chart-pie',
-  minValue: 1000,
-  maxValue: 2000,
-  minVariation: -10,
-  maxVariation: 20
-}, {
-  title: 'Revenue',
-  icon: 'i-lucide-circle-dollar-sign',
-  minValue: 200000,
-  maxValue: 500000,
-  minVariation: -20,
-  maxVariation: 30,
-  formatter: formatCurrency
-}, {
-  title: 'Orders',
-  icon: 'i-lucide-shopping-cart',
-  minValue: 100,
-  maxValue: 300,
-  minVariation: -5,
-  maxVariation: 15
-}]
-
-const { data: stats } = await useAsyncData<Stat[]>('stats', async () => {
-  return baseStats.map((stat) => {
-    const value = randomInt(stat.minValue, stat.maxValue)
-    const variation = randomInt(stat.minVariation, stat.maxVariation)
-
-    return {
-      title: stat.title,
-      icon: stat.icon,
-      value: stat.formatter ? stat.formatter(value) : value,
-      variation
-    }
-  })
-}, {
-  watch: [() => props.period, () => props.range],
-  default: () => []
+const { getStats } = useDashboardStats()
+const pending = ref(true)
+const error = ref(false)
+const statsData = ref({
+  averageRating: 0,
+  totalScans: 0,
+  totalReviews: 0,
+  websiteVisits: 0
 })
+
+// Charger les statistiques
+const loadStats = async () => {
+  try {
+    pending.value = true
+    error.value = false
+    const data = await getStats()
+    statsData.value = data
+  } catch (err) {
+    console.error('Erreur lors du chargement des statistiques:', err)
+    error.value = true
+  } finally {
+    pending.value = false
+  }
+}
+
+// Charger les stats au montage et quand les props changent
+onMounted(loadStats)
+watch([() => props.period, () => props.range], loadStats)
+
+const stats = computed<DashboardStat[]>(() => [
+  {
+    title: 'Note Moyenne',
+    icon: 'i-lucide-star',
+    value: pending.value ? '...' : error.value ? 'Erreur' : `${statsData.value.averageRating}/5`,
+    loading: pending.value,
+    error: error.value
+  },
+  {
+    title: 'Scans Total',
+    icon: 'i-lucide-qr-code',
+    value: pending.value ? '...' : error.value ? 'Erreur' : statsData.value.totalScans,
+    loading: pending.value,
+    error: error.value
+  },
+  {
+    title: 'Avis Reçus',
+    icon: 'i-lucide-message-circle',
+    value: pending.value ? '...' : error.value ? 'Erreur' : statsData.value.totalReviews,
+    loading: pending.value,
+    error: error.value
+  },
+  {
+    title: 'Visites Site',
+    icon: 'i-lucide-globe',
+    value: pending.value ? '...' : error.value ? 'Erreur' : statsData.value.websiteVisits || 'Bientôt',
+    loading: pending.value,
+    error: error.value
+  }
+])
 </script>
 
 <template>
@@ -87,11 +99,21 @@ const { data: stats } = await useAsyncData<Stat[]>('stats', async () => {
         </span>
 
         <UBadge
-          :color="stat.variation > 0 ? 'success' : 'error'"
+          v-if="stat.loading"
+          color="neutral"
           variant="subtle"
           class="text-xs"
         >
-          {{ stat.variation > 0 ? '+' : '' }}{{ stat.variation }}%
+          Chargement...
+        </UBadge>
+        
+        <UBadge
+          v-else-if="stat.error"
+          color="error"
+          variant="subtle"
+          class="text-xs"
+        >
+          Erreur
         </UBadge>
       </div>
     </UPageCard>

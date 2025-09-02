@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
 
+const toast = useToast()
+const supabaseUser = useSupabaseUser()
+const supabase = useSupabaseClient()
+
 defineProps<{
   collapsed?: boolean
 }>()
@@ -11,142 +15,154 @@ const appConfig = useAppConfig()
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
-const user = ref({
-  name: 'Benjamin Canac',
-  avatar: {
-    src: 'https://github.com/benjamincanac.png',
-    alt: 'Benjamin Canac'
+const { hasActiveSubscription } = useSubscription()
+const { profile } = useUserProfile()
+
+// Types pour l'entreprise
+interface UserBusiness {
+  id: string
+  name: string
+  address: string | null
+}
+
+// État réactif pour les données utilisateur et entreprise
+const userBusiness = ref<UserBusiness | null>(null)
+const loading = ref(false)
+
+// Données utilisateur dynamiques basées sur Supabase
+const user = computed(() => {
+  const displayName = profile.value?.full_name || supabaseUser.value?.email?.split('@')[0] || 'Utilisateur'
+  const avatarUrl = profile.value?.avatar_url || supabaseUser.value?.user_metadata?.avatar_url
+  
+  return {
+    name: displayName,
+    avatar: {
+      src: avatarUrl || undefined,
+      alt: displayName
+    }
   }
 })
 
-const items = computed<DropdownMenuItem[][]>(() => ([[{
-  type: 'label',
-  label: user.value.name,
-  avatar: user.value.avatar
-}], [{
-  label: 'Profile',
-  icon: 'i-lucide-user'
-}, {
-  label: 'Billing',
-  icon: 'i-lucide-credit-card'
-}, {
-  label: 'Settings',
-  icon: 'i-lucide-settings',
-  to: '/settings'
-}], [{
-  label: 'Theme',
-  icon: 'i-lucide-palette',
-  children: [{
-    label: 'Primary',
-    slot: 'chip',
-    chip: appConfig.ui.colors.primary,
-    content: {
-      align: 'center',
-      collisionPadding: 16
-    },
-    children: colors.map(color => ({
-      label: color,
-      chip: color,
-      slot: 'chip',
-      checked: appConfig.ui.colors.primary === color,
-      type: 'checkbox',
-      onSelect: (e) => {
-        e.preventDefault()
+// Charger l'entreprise de l'utilisateur
+const loadUserBusiness = async () => {
+  if (!supabaseUser.value?.id) return
 
-        appConfig.ui.colors.primary = color
-      }
-    }))
-  }, {
-    label: 'Neutral',
-    slot: 'chip',
-    chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
-    content: {
-      align: 'end',
-      collisionPadding: 16
-    },
-    children: neutrals.map(color => ({
-      label: color,
-      chip: color === 'neutral' ? 'old-neutral' : color,
-      slot: 'chip',
-      type: 'checkbox',
-      checked: appConfig.ui.colors.neutral === color,
-      onSelect: (e) => {
-        e.preventDefault()
+  try {
+    loading.value = true
+    console.log('🏢 UserMenu - Chargement entreprise utilisateur')
 
-        appConfig.ui.colors.neutral = color
-      }
-    }))
-  }]
-}, {
-  label: 'Appearance',
-  icon: 'i-lucide-sun-moon',
-  children: [{
-    label: 'Light',
-    icon: 'i-lucide-sun',
-    type: 'checkbox',
-    checked: colorMode.value === 'light',
-    onSelect(e: Event) {
-      e.preventDefault()
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('id, name, address')
+      .eq('owner_id', supabaseUser.value.id)
+      .limit(1)
+      .single() as { data: UserBusiness | null, error: any }
 
-      colorMode.preference = 'light'
+    if (error && error.code !== 'PGRST116') {
+      console.error('❌ UserMenu - Erreur chargement entreprise:', error)
+      return
     }
-  }, {
-    label: 'Dark',
-    icon: 'i-lucide-moon',
-    type: 'checkbox',
-    checked: colorMode.value === 'dark',
-    onUpdateChecked(checked: boolean) {
-      if (checked) {
-        colorMode.preference = 'dark'
-      }
-    },
-    onSelect(e: Event) {
-      e.preventDefault()
+
+    if (data) {
+      console.log('✅ UserMenu - Entreprise trouvée:', data.name)
+      userBusiness.value = data
+    } else {
+      console.log('ℹ️ UserMenu - Aucune entreprise trouvée pour cet utilisateur')
     }
-  }]
-}], [{
-  label: 'Templates',
-  icon: 'i-lucide-layout-template',
-  children: [{
-    label: 'Starter',
-    to: 'https://ui-pro-starter.nuxt.dev/'
-  }, {
-    label: 'Landing',
-    to: 'https://landing-template.nuxt.dev/'
-  }, {
-    label: 'Docs',
-    to: 'https://docs-template.nuxt.dev/'
-  }, {
-    label: 'SaaS',
-    to: 'https://saas-template.nuxt.dev/'
-  }, {
-    label: 'Dashboard',
-    to: 'https://dashboard-template.nuxt.dev/',
-    checked: true,
-    type: 'checkbox'
-  }, {
-    label: 'Chat',
-    to: 'https://chat-template.nuxt.dev/'
-  }]
-}], [{
-  label: 'Documentation',
-  icon: 'i-lucide-book-open',
-  to: 'https://ui.nuxt.com/getting-started/installation/pro/nuxt',
-  target: '_blank'
-}, {
-  label: 'GitHub repository',
-  icon: 'i-simple-icons-github',
-  to: 'https://github.com/nuxt-ui-pro/dashboard',
-  target: '_blank'
-}, {
-  label: 'Upgrade to Pro',
-  icon: 'i-lucide-rocket',
-  to: 'https://ui.nuxt.com/pro/purchase',
-  target: '_blank'
-}], [{
-  label: 'Log out',
-  icon: 'i-lucide-log-out'
-}]]))
+
+  } catch (err) {
+    console.error('❌ UserMenu - Erreur:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Charger l'entreprise quand l'utilisateur change
+watch(supabaseUser, (newUser) => {
+  if (newUser?.id) {
+    loadUserBusiness()
+  } else {
+    userBusiness.value = null
+  }
+}, { immediate: true })
+
+// Fonction de déconnexion
+const handleLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut()
+    
+    if (error) {
+      toast.add({
+        title: 'Erreur',
+        description: 'Impossible de se déconnecter.',
+        icon: 'i-lucide-alert-circle',
+        color: 'error'
+      })
+      return
+    }
+
+    toast.add({
+      title: 'Déconnecté',
+      description: 'Vous avez été déconnecté avec succès.',
+      icon: 'i-lucide-check',
+      color: 'success'
+    })
+
+    // Redirection vers la page d'accueil
+    await navigateTo('/')
+  } catch (err) {
+    console.error('Erreur lors de la déconnexion:', err)
+    toast.add({
+      title: 'Erreur',
+      description: 'Une erreur est survenue lors de la déconnexion.',
+      icon: 'i-lucide-alert-circle',
+      color: 'error'
+    })
+  }
+}
+
+const items = computed<DropdownMenuItem[][]>(() => {
+  const menuItems: DropdownMenuItem[][] = [
+    // Section utilisateur (label avec nom et avatar)
+    [{
+      type: 'label',
+      label: user.value.name,
+      avatar: user.value.avatar
+    }],
+    
+    // Section liens principaux
+    [{
+      label: 'Profil',
+      icon: 'i-lucide-user',
+      to: '/dashboard/settings' // Lien vers la page de réglages
+    }],
+    
+    // Section entreprise (conditionnelle)
+    ...(userBusiness.value ? [[{
+      label: userBusiness.value.name || 'Mon entreprise',
+      icon: 'i-lucide-building',
+      to: `/business/${userBusiness.value.id}` // Lien dynamique vers l'entreprise
+    }]] : []),
+    
+    // Section navigation
+    [{
+      label: 'Menu Principal',
+      icon: 'i-lucide-home',
+      to: '/'
+    }],
+    
+    // Section déconnexion
+    [{
+      label: 'Se déconnecter',
+      icon: 'i-lucide-log-out',
+      color: 'error',
+      onSelect: handleLogout
+    }]
+  ]
+  
+  return menuItems
+})
+
 </script>
 
 <template>

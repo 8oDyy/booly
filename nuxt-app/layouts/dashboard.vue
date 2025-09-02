@@ -7,14 +7,14 @@ const toast = useToast()
 const open = ref(false)
 
 const links = [[{
-  label: 'Home',
-  icon: 'i-lucide-house',
+  label: 'Aperçu',
+  icon: 'i-lucide-eye',
   to: '/dashboard',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Inbox',
+  label: 'Avis',
   icon: 'i-lucide-inbox',
   to: '/dashboard/inbox',
   badge: '4',
@@ -22,16 +22,16 @@ const links = [[{
     open.value = false
   }
 }, {
-  label: 'Customers',
-  icon: 'i-lucide-users',
-  to: '/dashboard/customers',
+  label: 'Gestion Des Checks',
+  icon: 'i-lucide-qr-code',
+  to: '/dashboard/checks',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Settings',
+  label: 'Entreprise',
   to: '/dashboard/settings',
-  icon: 'i-lucide-settings',
+  icon: 'i-lucide-building',
   defaultOpen: true,
   type: 'trigger',
   children: [{
@@ -42,13 +42,13 @@ const links = [[{
       open.value = false
     }
   }, {
-    label: 'Members',
+    label: 'Photo',
     to: '/dashboard/settings/members',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Notifications',
+    label: 'Horaires',
     to: '/dashboard/settings/notifications',
     onSelect: () => {
       open.value = false
@@ -124,9 +124,6 @@ onMounted(async () => {
       class="bg-elevated/25"
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
-      <template #header="{ collapsed }">
-        <TeamsMenu :collapsed="collapsed" />
-      </template>
 
       <template #default="{ collapsed }">
         <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />

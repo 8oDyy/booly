@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, format } from 'date-fns'
-import { VisXYContainer, VisLine, VisAxis, VisArea, VisCrosshair, VisTooltip } from '@unovis/vue'
 import type { Period, Range } from '~/types/index'
-import { useElementSize } from '@vueuse/core'
+import { useDashboardStats } from '~/composables/dashboard/useDashboardStats'
 
 const cardRef = useTemplateRef<HTMLElement | null>('cardRef')
 
@@ -11,52 +9,41 @@ const props = defineProps<{
   range: Range
 }>()
 
-type DataRecord = {
-  date: Date
-  amount: number
-}
+const { getRatingEvolution } = useDashboardStats()
 
-const { width } = useElementSize(cardRef)
+// Pour l'instant, on affiche un placeholder
+// TODO: Implémenter le vrai graphique d'évolution des notes
+const pending = ref(false)
+const error = ref(false)
+const averageRating = ref(0)
 
-const data = ref<DataRecord[]>([])
-
-watch([() => props.period, () => props.range], () => {
-  const dates = ({
-    daily: eachDayOfInterval,
-    weekly: eachWeekOfInterval,
-    monthly: eachMonthOfInterval
-  } as Record<Period, typeof eachDayOfInterval>)[props.period](props.range)
-
-  const min = 1000
-  const max = 10000
-
-  data.value = dates.map(date => ({ date, amount: Math.floor(Math.random() * (max - min + 1)) + min }))
-}, { immediate: true })
-
-const x = (_: DataRecord, i: number) => i
-const y = (d: DataRecord) => d.amount
-
-const total = computed(() => data.value.reduce((acc: number, { amount }) => acc + amount, 0))
-
-const formatNumber = new Intl.NumberFormat('en', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format
-
-const formatDate = (date: Date): string => {
-  return ({
-    daily: format(date, 'd MMM'),
-    weekly: format(date, 'd MMM'),
-    monthly: format(date, 'MMM yyy')
-  })[props.period]
-}
-
-const xTicks = (i: number) => {
-  if (i === 0 || i === data.value.length - 1 || !data.value[i]) {
-    return ''
+// Fonction pour charger les données d'évolution (placeholder pour l'instant)
+const loadRatingEvolution = async () => {
+  try {
+    pending.value = true
+    error.value = false
+    
+    // Pour l'instant, on simule une note moyenne
+    // TODO: Calculer la vraie évolution des notes
+    const reviews = await getRatingEvolution(30)
+    
+    if (reviews.length > 0) {
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
+      averageRating.value = Math.round((totalRating / reviews.length) * 10) / 10
+    } else {
+      averageRating.value = 0
+    }
+  } catch (err) {
+    console.error('Erreur lors du chargement de l\'évolution des notes:', err)
+    error.value = true
+  } finally {
+    pending.value = false
   }
-
-  return formatDate(data.value[i].date)
 }
 
-const template = (d: DataRecord) => `${formatDate(d.date)}: ${formatNumber(d.amount)}`
+// Charger les données au montage et quand les props changent
+onMounted(loadRatingEvolution)
+watch([() => props.period, () => props.range], loadRatingEvolution)
 </script>
 
 <template>
@@ -64,59 +51,48 @@ const template = (d: DataRecord) => `${formatDate(d.date)}: ${formatNumber(d.amo
     <template #header>
       <div>
         <p class="text-xs text-muted uppercase mb-1.5">
-          Revenue
+          Évolution des Notes
         </p>
         <p class="text-3xl text-highlighted font-semibold">
-          {{ formatNumber(total) }}
+          <span v-if="pending">...</span>
+          <span v-else-if="error">Erreur</span>
+          <span v-else>{{ averageRating }}/5</span>
         </p>
       </div>
     </template>
 
-    <VisXYContainer
-      :data="data"
-      :padding="{ top: 40 }"
-      class="h-96"
-      :width="width"
-    >
-      <VisLine
-        :x="x"
-        :y="y"
-        color="var(--ui-primary)"
-      />
-      <VisArea
-        :x="x"
-        :y="y"
-        color="var(--ui-primary)"
-        :opacity="0.1"
-      />
+    <div class="h-96 flex items-center justify-center">
+      <!-- État de chargement -->
+      <div v-if="pending" class="flex flex-col items-center">
+        <UIcon name="i-lucide-loader-2" class="animate-spin size-8 text-primary mb-2" />
+        <span class="text-sm text-muted">Chargement...</span>
+      </div>
 
-      <VisAxis
-        type="x"
-        :x="x"
-        :tick-format="xTicks"
-      />
+      <!-- État d'erreur -->
+      <div v-else-if="error" class="flex flex-col items-center">
+        <UIcon name="i-lucide-alert-circle" class="size-8 text-error mb-2" />
+        <span class="text-sm text-error">Erreur de chargement</span>
+      </div>
 
-      <VisCrosshair
-        color="var(--ui-primary)"
-        :template="template"
-      />
-
-      <VisTooltip />
-    </VisXYContainer>
+      <!-- Placeholder pour le graphique -->
+      <div v-else class="flex flex-col items-center text-center">
+        <UIcon name="i-lucide-trending-up" class="size-12 text-muted mb-4" />
+        <h3 class="text-lg font-medium text-highlighted mb-2">Graphique d'évolution</h3>
+        <p class="text-sm text-muted max-w-md">
+          Le graphique d'évolution des notes dans le temps sera bientôt disponible.
+          Pour l'instant, vous pouvez voir la note moyenne actuelle ci-dessus.
+        </p>
+        <UBadge 
+          v-if="averageRating > 0" 
+          :color="averageRating >= 4 ? 'success' : averageRating >= 3 ? 'warning' : 'error'"
+          variant="subtle"
+          class="mt-3"
+        >
+          Note moyenne: {{ averageRating }}/5
+        </UBadge>
+      </div>
+    </div>
   </UCard>
 </template>
 
-<style scoped>
-.unovis-xy-container {
-  --vis-crosshair-line-stroke-color: var(--ui-primary);
-  --vis-crosshair-circle-stroke-color: var(--ui-bg);
 
-  --vis-axis-grid-color: var(--ui-border);
-  --vis-axis-tick-color: var(--ui-border);
-  --vis-axis-tick-label-color: var(--ui-text-dimmed);
-
-  --vis-tooltip-background-color: var(--ui-bg);
-  --vis-tooltip-border-color: var(--ui-border);
-  --vis-tooltip-text-color: var(--ui-text-highlighted);
-}
-</style>
