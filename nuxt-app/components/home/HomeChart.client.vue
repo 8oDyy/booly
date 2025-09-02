@@ -84,9 +84,10 @@ watch([() => props.period, () => props.range], loadRatingEvolution)
         </p>
         <UBadge 
           v-if="averageRating > 0" 
-          :color="averageRating >= 4 ? 'success' : averageRating >= 3 ? 'warning' : 'error'"
+          :color="averageRating >= 4 ? 'secondary' : averageRating >= 3 ? 'warning' : 'error'"
           variant="subtle"
           class="mt-3"
+          
         >
           Note moyenne: {{ averageRating }}/5
         </UBadge>

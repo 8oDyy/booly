@@ -204,7 +204,7 @@ const reportOptions = [
       <!-- Informations de l'établissement -->
       <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
         <div class="flex items-center gap-3 mb-2">
-          <UIcon name="i-lucide-building" class="size-5 text-primary" />
+          <UIcon name="i-lucide-building" color="secondary" class="size-5" />
           <h3 class="font-medium text-highlighted">{{ review.business?.name || 'Établissement inconnu' }}</h3>
         </div>
       </div>
@@ -219,6 +219,7 @@ const reportOptions = [
               name="i-lucide-star"
               :class="filled ? 'text-yellow-400 fill-current' : 'text-gray-300'"
               class="size-5"
+              color="secondary"
             />
           </div>
           <span class="text-lg font-medium text-highlighted">{{ review.rating }}/5</span>
@@ -274,7 +275,7 @@ const reportOptions = [
 
         <!-- Réponse existante (mode lecture) -->
         <div v-if="review.response && !isRespondingMode" class="space-y-3">
-          <div class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 border-l-4 border-primary">
+          <div class="bg-secondary-50 dark:bg-secondary-900/20 rounded-lg p-4 border-l-4 border-secondary">
             <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
               {{ review.response.content }}
             </p>

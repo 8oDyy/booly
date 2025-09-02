@@ -4,17 +4,22 @@ definePageMeta({
 })
 
 const user = useSupabaseUser()
-const { business, loading, error, saveOpeningHours, getOpeningHours } = useBusinessManagement()
+const { business, loading: businessLoading } = useBusinessManagement()
+const { 
+  openingHours, 
+  loading, 
+  error, 
+  loadOpeningHours, 
+  saveOpeningHours,
+  applyBusinessHoursPreset,
+  applyRetailHoursPreset,
+  applyRestaurantHoursPreset,
+  syncTimeSlots,
+  copyDayToAll,
+  isOpenNow,
+  getNextOpeningTime
+} = useOpeningHours()
 const toast = useToast()
-
-// Structure pour les horaires d'ouverture
-interface OpeningHours {
-  [key: string]: {
-    isOpen: boolean
-    openTime: string
-    closeTime: string
-  }
-}
 
 const daysOfWeek = [
   { key: 'monday', label: 'Lundi' },
@@ -26,44 +31,20 @@ const daysOfWeek = [
   { key: 'sunday', label: 'Dimanche' }
 ]
 
-// Horaires par défaut
-const defaultHours: OpeningHours = {
-  monday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
-  tuesday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
-  wednesday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
-  thursday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
-  friday: { isOpen: true, openTime: '09:00', closeTime: '18:00' },
-  saturday: { isOpen: true, openTime: '10:00', closeTime: '17:00' },
-  sunday: { isOpen: false, openTime: '10:00', closeTime: '17:00' }
-}
-
-const openingHours = ref<OpeningHours>({ ...defaultHours })
 const pending = ref(false)
 
-// Charger les horaires existants depuis Supabase
-const loadExistingHours = () => {
-  if (business.value) {
-    const savedHours = getOpeningHours()
-    if (savedHours) {
-      console.log('🕒 Horaires chargés depuis Supabase:', savedHours)
-      openingHours.value = { ...savedHours }
-    }
-  }
-}
-
 // Charger les horaires quand l'entreprise change
-watch(business, () => {
-  loadExistingHours()
+watch(business, async (newBusiness) => {
+  if (newBusiness?.id) {
+    await loadOpeningHours(newBusiness.id)
+  }
 }, { immediate: true })
+
+// Synchroniser les timeSlots manuellement lors de la sauvegarde
 
 // Fonction pour copier les horaires d'un jour à tous les autres
 function copyToAllDays(sourceDay: string) {
-  const sourceHours = openingHours.value[sourceDay]
-  for (const day of daysOfWeek) {
-    if (day.key !== sourceDay) {
-      openingHours.value[day.key] = { ...sourceHours }
-    }
-  }
+  copyDayToAll(sourceDay as keyof typeof openingHours.value)
   
   toast.add({
     title: 'Succès',
@@ -77,31 +58,13 @@ function copyToAllDays(sourceDay: string) {
 function applyPreset(preset: 'business' | 'retail' | 'restaurant') {
   switch (preset) {
     case 'business':
-      daysOfWeek.forEach(day => {
-        if (['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(day.key)) {
-          openingHours.value[day.key] = { isOpen: true, openTime: '09:00', closeTime: '18:00' }
-        } else {
-          openingHours.value[day.key] = { isOpen: false, openTime: '10:00', closeTime: '17:00' }
-        }
-      })
+      applyBusinessHoursPreset()
       break
     case 'retail':
-      daysOfWeek.forEach(day => {
-        if (day.key === 'sunday') {
-          openingHours.value[day.key] = { isOpen: true, openTime: '14:00', closeTime: '18:00' }
-        } else {
-          openingHours.value[day.key] = { isOpen: true, openTime: '10:00', closeTime: '19:00' }
-        }
-      })
+      applyRetailHoursPreset()
       break
     case 'restaurant':
-      daysOfWeek.forEach(day => {
-        if (day.key === 'monday') {
-          openingHours.value[day.key] = { isOpen: false, openTime: '12:00', closeTime: '22:00' }
-        } else {
-          openingHours.value[day.key] = { isOpen: true, openTime: '12:00', closeTime: '22:00' }
-        }
-      })
+      applyRestaurantHoursPreset()
       break
   }
   
@@ -115,7 +78,12 @@ function applyPreset(preset: 'business' | 'retail' | 'restaurant') {
 
 // Sauvegarde des horaires
 async function saveHours() {
+  console.log('🚀 saveHours - Début de la sauvegarde')
+  console.log('🚀 saveHours - User ID:', user.value?.id)
+  console.log('🚀 saveHours - Business:', business.value)
+  
   if (!user.value?.id) {
+    console.warn('⚠️ saveHours - Utilisateur non connecté')
     toast.add({
       title: 'Erreur',
       description: 'Vous devez être connecté pour modifier les horaires.',
@@ -126,6 +94,7 @@ async function saveHours() {
   }
 
   if (!business.value) {
+    console.warn('⚠️ saveHours - Entreprise manquante')
     toast.add({
       title: 'Erreur',
       description: 'Vous devez d\'abord créer votre établissement.',
@@ -138,8 +107,22 @@ async function saveHours() {
   try {
     pending.value = true
     
+    console.log('🔄 saveHours - Horaires avant synchronisation:', JSON.parse(JSON.stringify(openingHours.value)))
+    
+    // Synchroniser les timeSlots avant la sauvegarde
+    daysOfWeek.forEach(day => {
+      console.log(`🔄 saveHours - Synchronisation ${day.key}`)
+      const dayData = openingHours.value[day.key as keyof typeof openingHours.value]
+      console.log(`🔄 saveHours - ${day.key} avant sync:`, dayData)
+      syncTimeSlots(day.key as keyof typeof openingHours.value)
+      console.log(`🔄 saveHours - ${day.key} après sync:`, openingHours.value[day.key as keyof typeof openingHours.value])
+    })
+    
+    console.log('💾 saveHours - Horaires après synchronisation:', JSON.parse(JSON.stringify(openingHours.value)))
+    
     // Sauvegarder les horaires via Supabase
-    await saveOpeningHours(openingHours.value)
+    console.log('💾 saveHours - Appel saveOpeningHours avec business ID:', business.value.id)
+    await saveOpeningHours(business.value.id, openingHours.value)
     
     toast.add({
       title: 'Succès',
@@ -233,8 +216,8 @@ async function saveHours() {
         >
           <!-- Jour et toggle -->
           <div class="flex items-center gap-3 min-w-[120px]">
-            <UToggle
-              v-model="openingHours[day.key].isOpen"
+            <UCheckbox
+              v-model="openingHours[day.key as keyof typeof openingHours].isOpen"
               :disabled="loading"
             />
             <span class="font-medium text-gray-900 dark:text-white">
@@ -244,13 +227,13 @@ async function saveHours() {
 
           <!-- Horaires -->
           <div
-            v-if="openingHours[day.key].isOpen"
+            v-if="openingHours[day.key as keyof typeof openingHours].isOpen"
             class="flex items-center gap-3 flex-1"
           >
             <div class="flex items-center gap-2">
               <span class="text-sm text-gray-500">De</span>
               <UInput
-                v-model="openingHours[day.key].openTime"
+                v-model="openingHours[day.key as keyof typeof openingHours].openTime"
                 type="time"
                 :disabled="loading"
                 class="w-24"
@@ -259,7 +242,7 @@ async function saveHours() {
             <div class="flex items-center gap-2">
               <span class="text-sm text-gray-500">à</span>
               <UInput
-                v-model="openingHours[day.key].closeTime"
+                v-model="openingHours[day.key as keyof typeof openingHours].closeTime"
                 type="time"
                 :disabled="loading"
                 class="w-24"
@@ -277,7 +260,7 @@ async function saveHours() {
           <!-- Actions -->
           <div class="flex gap-2">
             <UButton
-              v-if="openingHours[day.key].isOpen"
+              v-if="openingHours[day.key as keyof typeof openingHours].isOpen"
               label="Copier à tous"
               color="neutral"
               variant="ghost"
@@ -305,10 +288,10 @@ async function saveHours() {
           >
             <span class="font-medium text-sm">{{ day.label }}</span>
             <span
-              v-if="openingHours[day.key].isOpen"
+              v-if="openingHours[day.key as keyof typeof openingHours].isOpen"
               class="text-sm text-green-600 dark:text-green-400"
             >
-              {{ openingHours[day.key].openTime }} - {{ openingHours[day.key].closeTime }}
+              {{ openingHours[day.key as keyof typeof openingHours].openTime }} - {{ openingHours[day.key as keyof typeof openingHours].closeTime }}
             </span>
             <span
               v-else

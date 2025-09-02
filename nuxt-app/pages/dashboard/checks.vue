@@ -153,7 +153,7 @@ const openCreateModal = () => {
     <div class="p-4 border-b border-gray-200 dark:border-gray-800">
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-primary-600">{{ stats.totalScanTags }}</div>
+          <div class="text-2xl font-bold text-secondary-600">{{ stats.totalScanTags }}</div>
           <div class="text-xs text-gray-500">Total Tags</div>
         </div>
         <div class="text-center">

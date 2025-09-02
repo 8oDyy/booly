@@ -11,16 +11,6 @@ import { useDashboard } from '~/composables/dashboard/useDashboard'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
 
-const items = [[{
-  label: 'New mail',
-  icon: 'i-lucide-send',
-  to: '/inbox'
-}, {
-  label: 'New customer',
-  icon: 'i-lucide-user-plus',
-  to: '/customers'
-}]] satisfies DropdownMenuItem[][]
-
 const range = shallowRef<Range>({
   start: sub(new Date(), { days: 14 }),
   end: new Date()
@@ -50,10 +40,6 @@ const period = ref<Period>('daily')
               </UChip>
             </UButton>
           </UTooltip>
-
-          <UDropdownMenu :items="items">
-            <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
-          </UDropdownMenu>
         </template>
       </UDashboardNavbar>
 
