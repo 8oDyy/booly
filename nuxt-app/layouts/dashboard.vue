@@ -43,19 +43,19 @@ const links = [[{
     }
   }, {
     label: 'Photo',
-    to: '/dashboard/settings/members',
+    to: '/dashboard/settings/photos',
     onSelect: () => {
       open.value = false
     }
   }, {
     label: 'Horaires',
-    to: '/dashboard/settings/notifications',
+    to: '/dashboard/settings/horaires',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Security',
-    to: '/dashboard/settings/security',
+    label: 'Paramètres',
+    to: '/dashboard/settings/parametres',
     onSelect: () => {
       open.value = false
     }
