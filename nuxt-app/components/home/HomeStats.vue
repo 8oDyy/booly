@@ -50,7 +50,7 @@ const stats = computed<DashboardStat[]>(() => [
     icon: 'i-lucide-star',
     value: pending.value ? '...' : error.value ? 'Erreur' : `${statsData.value.averageRating}/5`,
     loading: pending.value,
-    error: error.value
+    error: error.value,
   },
   {
     title: 'Scans Total',
@@ -102,8 +102,7 @@ const stats = computed<DashboardStat[]>(() => [
           v-if="stat.loading"
           color="neutral"
           variant="subtle"
-          class="text-xs"
-        >
+          class="text-xs"        >
           Chargement...
         </UBadge>
         

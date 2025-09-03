@@ -87,7 +87,6 @@ watch([() => props.period, () => props.range], loadRatingEvolution)
           :color="averageRating >= 4 ? 'secondary' : averageRating >= 3 ? 'warning' : 'error'"
           variant="subtle"
           class="mt-3"
-          
         >
           Note moyenne: {{ averageRating }}/5
         </UBadge>

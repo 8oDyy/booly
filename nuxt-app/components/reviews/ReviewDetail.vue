@@ -68,7 +68,14 @@ const cancelResponse = () => {
 
 // Soumettre une nouvelle réponse
 const submitResponse = async () => {
+  console.log('🚀 ReviewDetail - submitResponse - Début de la fonction')
+  console.log('🚀 ReviewDetail - submitResponse - responseContent:', responseContent.value)
+  console.log('🚀 ReviewDetail - submitResponse - review:', props.review)
+  console.log('🚀 ReviewDetail - submitResponse - review.id:', props.review.id)
+  console.log('🚀 ReviewDetail - submitResponse - review.response:', props.review.response)
+  
   if (!responseContent.value.trim()) {
+    console.warn('⚠️ ReviewDetail - submitResponse - Contenu vide')
     toast.add({
       title: 'Erreur',
       description: 'Veuillez saisir une réponse',
@@ -79,10 +86,14 @@ const submitResponse = async () => {
 
   try {
     isSubmitting.value = true
+    console.log('🔄 ReviewDetail - submitResponse - Début de la soumission')
 
     if (props.review.response) {
       // Modifier la réponse existante
+      console.log('✏️ ReviewDetail - submitResponse - Modification d\'une réponse existante')
+      console.log('✏️ ReviewDetail - submitResponse - response.id:', props.review.response.id)
       await updateResponse(props.review.response.id, responseContent.value.trim())
+      console.log('✅ ReviewDetail - submitResponse - Réponse modifiée avec succès')
       toast.add({
         title: 'Réponse modifiée',
         description: 'Votre réponse a été mise à jour avec succès',
@@ -90,7 +101,13 @@ const submitResponse = async () => {
       })
     } else {
       // Créer une nouvelle réponse
+      console.log('📝 ReviewDetail - submitResponse - Création d\'une nouvelle réponse')
+      console.log('📝 ReviewDetail - submitResponse - Appel respondToReview avec:', {
+        reviewId: props.review.id,
+        content: responseContent.value.trim()
+      })
       await respondToReview(props.review.id, responseContent.value.trim())
+      console.log('✅ ReviewDetail - submitResponse - Nouvelle réponse créée avec succès')
       toast.add({
         title: 'Réponse envoyée',
         description: 'Votre réponse a été publiée avec succès',
@@ -100,9 +117,12 @@ const submitResponse = async () => {
 
     isRespondingMode.value = false
     isEditingResponse.value = false
+    console.log('📡 ReviewDetail - submitResponse - Émission de l\'événement updated')
     emit('updated')
   } catch (error) {
-    console.error('Erreur lors de la soumission de la réponse:', error)
+    console.error('❌ ReviewDetail - submitResponse - Erreur lors de la soumission:', error)
+    console.error('❌ ReviewDetail - submitResponse - Type d\'erreur:', typeof error)
+    console.error('❌ ReviewDetail - submitResponse - Message d\'erreur:', (error as Error)?.message || 'Erreur inconnue')
     toast.add({
       title: 'Erreur',
       description: 'Impossible de publier la réponse. Veuillez réessayer.',
@@ -110,6 +130,7 @@ const submitResponse = async () => {
     })
   } finally {
     isSubmitting.value = false
+    console.log('🏁 ReviewDetail - submitResponse - Fin de la fonction')
   }
 }
 

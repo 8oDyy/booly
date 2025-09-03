@@ -126,7 +126,6 @@ onMounted(async () => {
     >
 
       <template #default="{ collapsed }">
-        <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
 
         <UNavigationMenu
           :collapsed="collapsed"
@@ -134,6 +133,7 @@ onMounted(async () => {
           orientation="vertical"
           tooltip
           popover
+          color="secondary"
         />
 
         <UNavigationMenu
@@ -150,10 +150,8 @@ onMounted(async () => {
       </template>
     </UDashboardSidebar>
 
-    <UDashboardSearch :groups="groups" />
 
     <slot />
-
     <NotificationsSlideover />
   </UDashboardGroup>
 </template>

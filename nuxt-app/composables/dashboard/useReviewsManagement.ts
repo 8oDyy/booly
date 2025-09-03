@@ -136,12 +136,19 @@ export const useReviewsManagement = () => {
 
   // Répondre à un avis
   const respondToReview = async (reviewId: string, content: string): Promise<Response> => {
+    console.log('🚀 respondToReview - Début de la fonction')
+    console.log('🚀 respondToReview - reviewId:', reviewId)
+    console.log('🚀 respondToReview - content:', content)
+    console.log('🚀 respondToReview - user.value?.id:', user.value?.id)
+    
     if (!user.value?.id) {
+      console.error('❌ respondToReview - Utilisateur non connecté')
       throw new Error('Utilisateur non connecté')
     }
 
     try {
       // Vérifier que l'avis appartient à un établissement de l'utilisateur
+      console.log('🔍 respondToReview - Vérification de l\'avis et de l\'autorisation...')
       const { data: review, error: reviewError } = await supabase
         .from('reviews')
         .select(`
@@ -151,39 +158,63 @@ export const useReviewsManagement = () => {
         .eq('id', reviewId)
         .single()
 
-      if (reviewError) throw reviewError
+      console.log('📊 respondToReview - Résultat requête review:', { review, error: reviewError })
+
+      if (reviewError) {
+        console.error('❌ respondToReview - Erreur lors de la récupération de l\'avis:', reviewError)
+        throw reviewError
+      }
+
+      console.log('🔍 respondToReview - Review businesses:', review.businesses)
+      console.log('🔍 respondToReview - Owner ID from review:', (review.businesses as any)?.owner_id)
+      console.log('🔍 respondToReview - Current user ID:', user.value.id)
 
       if ((review.businesses as any).owner_id !== user.value.id) {
+        console.error('❌ respondToReview - Utilisateur non autorisé')
         throw new Error('Vous n\'êtes pas autorisé à répondre à cet avis')
       }
 
       // Vérifier qu'il n'y a pas déjà une réponse
+      console.log('🔍 respondToReview - Vérification de l\'existence d\'une réponse...')
       const { data: existingResponse, error: existingError } = await supabase
         .from('responses')
         .select('id')
         .eq('review_id', reviewId)
         .single()
 
+      console.log('📊 respondToReview - Résultat vérification réponse existante:', { existingResponse, error: existingError })
+
       if (existingResponse) {
+        console.error('❌ respondToReview - Une réponse existe déjà')
         throw new Error('Une réponse existe déjà pour cet avis')
       }
 
       // Créer la réponse
+      console.log('💾 respondToReview - Création de la réponse...')
+      const insertData = {
+        review_id: reviewId,
+        business_owner_id: user.value.id,
+        content: content
+      }
+      console.log('💾 respondToReview - Données à insérer:', insertData)
+
       const { data: response, error: responseError } = await supabase
         .from('responses')
-        .insert({
-          review_id: reviewId,
-          business_owner_id: user.value.id,
-          content: content
-        })
+        .insert(insertData)
         .select()
         .single()
 
-      if (responseError) throw responseError
+      console.log('📊 respondToReview - Résultat insertion:', { response, error: responseError })
 
+      if (responseError) {
+        console.error('❌ respondToReview - Erreur lors de l\'insertion:', responseError)
+        throw responseError
+      }
+
+      console.log('✅ respondToReview - Réponse créée avec succès:', response)
       return response
     } catch (error) {
-      console.error('Erreur lors de la création de la réponse:', error)
+      console.error('❌ respondToReview - Erreur générale:', error)
       throw error
     }
   }
