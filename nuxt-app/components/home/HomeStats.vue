@@ -76,6 +76,12 @@ const stats = computed<DashboardStat[]>(() => [
 ])
 </script>
 
+<style scoped>
+:deep(.u-page-card [data-slot="leading"] svg) {
+  color: rgb(59 130 246) !important;
+}
+</style>
+
 <template>
   <UPageGrid class="lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-px">
     <UPageCard
@@ -85,10 +91,11 @@ const stats = computed<DashboardStat[]>(() => [
       :title="stat.title"
       to="/dashboard/customers"
       variant="subtle"
+      color="blue"
       :ui="{
         container: 'gap-y-1.5',
         wrapper: 'items-start',
-        leading: 'p-2.5 rounded-full bg-primary/10 ring ring-inset ring-primary/25 flex-col',
+        leading: 'p-2.5 rounded-full bg-blue-500/10 ring ring-inset ring-blue-500/25 flex-col [&>*]:text-blue-500',
         title: 'font-normal text-muted text-xs uppercase'
       }"
       class="lg:rounded-none first:rounded-l-lg last:rounded-r-lg hover:z-1"

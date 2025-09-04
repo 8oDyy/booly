@@ -132,7 +132,7 @@ const openCreateModal = () => {
       </template>
       
       <template #trailing>
-        <UBadge :label="filteredScanTags.length" variant="subtle" />
+        <UBadge :label="filteredScanTags.length" variant="subtle" color="secondary"/>
       </template>
 
       <template #right>
@@ -141,6 +141,7 @@ const openCreateModal = () => {
             icon="i-lucide-plus"
             size="sm"
             label="Nouveau Tag"
+            color="secondary"
           />
           <template #content>
             <ScanTagModal/>

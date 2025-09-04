@@ -134,7 +134,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
     [{
       label: 'Profil',
       icon: 'i-lucide-user',
-      to: '/dashboard/settings' // Lien vers la page de réglages
+      to: '/dashboard/settings/parametres' // Lien vers la page de réglages
     }],
     
     // Section entreprise (conditionnelle)

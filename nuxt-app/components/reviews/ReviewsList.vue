@@ -88,7 +88,7 @@ const truncateText = (text: string | null, maxLength: number = 100) => {
           :key="review.id"
           class="p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 cursor-pointer transition-colors"
           :class="{
-            'bg-primary-50 dark:bg-primary-900/20 border-l-4 border-primary': selectedReview?.id === review.id
+            'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500': selectedReview?.id === review.id
           }"
           @click="selectedReview = review"
         >

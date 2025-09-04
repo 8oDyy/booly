@@ -126,15 +126,16 @@ onMounted(async () => {
     >
 
       <template #default="{ collapsed }">
-
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[0]"
-          orientation="vertical"
-          tooltip
-          popover
-          color="secondary"
-        />
+        <div class="pt-6 pl-2">
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="links[0]"
+            orientation="vertical"
+            tooltip
+            popover
+            color="secondary"
+          />
+        </div>
 
         <UNavigationMenu
           :collapsed="collapsed"

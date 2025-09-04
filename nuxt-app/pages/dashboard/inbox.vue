@@ -120,7 +120,7 @@ watch(filteredReviews, () => {
         <UDashboardSidebarCollapse />
       </template>
       <template #trailing>
-        <UBadge :label="filteredReviews.length" variant="subtle" />
+        <UBadge :label="filteredReviews.length" variant="subtle" color="secondary"/>
       </template>
 
       <template #right>
@@ -129,6 +129,7 @@ watch(filteredReviews, () => {
           :items="tabItems"
           :content="false"
           size="xs"
+          color="secondary"
         />
       </template>
     </UDashboardNavbar>
@@ -136,6 +137,7 @@ watch(filteredReviews, () => {
     <!-- Liste des avis -->
     <ReviewsList 
       v-model="selectedReview" 
+      color="secondary"
       :reviews="filteredReviews" 
       :pending="pending"
       :error="error"

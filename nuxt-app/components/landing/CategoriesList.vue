@@ -48,7 +48,8 @@
           @click="showAll = true"
           variant="outline"
           size="lg"
-          class="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+          color="secondary"
+          class="border-blue-200 text-blue-600 hover:bg-blue-50"
         >
           Voir toutes les catégories ({{ categories.length }})
           <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 ml-2" />

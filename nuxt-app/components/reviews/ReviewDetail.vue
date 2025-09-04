@@ -327,29 +327,64 @@ const reportOptions = [
         </div>
 
         <!-- Formulaire de réponse -->
-        <div v-else-if="isRespondingMode || !review.response" class="space-y-3">
+        <div v-else-if="isRespondingMode || !review.response" class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+              <UIcon name="i-lucide-message-square-plus" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-900 dark:text-white">
+                {{ review.response ? 'Modifier votre réponse' : 'Répondre au client' }}
+              </h4>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ review.response ? 'Modifiez votre réponse existante' : 'Rédigez une réponse professionnelle et bienveillante' }}
+              </p>
+            </div>
+          </div>
+          
           <UTextarea
             v-model="responseContent"
             placeholder="Rédigez votre réponse au client..."
-            :rows="4"
+            :rows="6"
             :disabled="isSubmitting"
+            color="secondary"
+            class="resize-none w-full"
+            :ui="{
+              base: 'w-full min-h-[150px] rounded-lg border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 transition-colors'
+            }"
           />
           
-          <div class="flex gap-2">
-            <UButton
-              @click="submitResponse"
-              :loading="isSubmitting"
-              :disabled="!responseContent.trim()"
-            >
-              {{ review.response ? 'Modifier la réponse' : 'Publier la réponse' }}
-            </UButton>
-            <UButton
-              variant="outline"
-              @click="cancelResponse"
-              :disabled="isSubmitting"
-            >
-              Annuler
-            </UButton>
+          <div class="flex items-center justify-between pt-2">
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+              {{ responseContent.length }}/500 caractères
+            </div>
+            
+            <div class="flex gap-3">
+              <UButton
+                variant="ghost"
+                color="neutral"
+                @click="cancelResponse"
+                :disabled="isSubmitting"
+                class="px-4"
+              >
+                <UIcon name="i-lucide-x" class="w-4 h-4 mr-2" />
+                Annuler
+              </UButton>
+              
+              <UButton
+                color="secondary"
+                @click="submitResponse"
+                :loading="isSubmitting"
+                :disabled="!responseContent.trim()"
+                class="px-6"
+              >
+                <UIcon 
+                  :name="review.response ? 'i-lucide-edit-3' : 'i-lucide-send'" 
+                  class="w-4 h-4 mr-2" 
+                />
+                {{ review.response ? 'Modifier la réponse' : 'Publier la réponse' }}
+              </UButton>
+            </div>
           </div>
         </div>
 

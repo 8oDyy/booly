@@ -218,6 +218,7 @@ async function saveHours() {
           <div class="flex items-center gap-3 min-w-[120px]">
             <UCheckbox
               v-model="openingHours[day.key as keyof typeof openingHours].isOpen"
+              color="secondary"
               :disabled="loading"
             />
             <span class="font-medium text-gray-900 dark:text-white">

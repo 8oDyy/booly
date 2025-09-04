@@ -30,14 +30,15 @@
         <!-- Search bar -->
         <div class="max-w-4xl mx-auto">
           <div class="bg-white rounded-2xl p-2 shadow-2xl">
-            <div class="flex flex-col md:flex-row gap-2">
+            <div class="flex flex-col md:flex-row gap-2 w-full">
               <!-- Service search -->
-              <div class="flex-1 relative">
-                <UIcon name="i-heroicons-magnifying-glass" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <div class="flex-1 relative w-full">
+                <UIcon name="i-heroicons-magnifying-glass" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
                 <UInput
                   v-model="searchQuery"
                   placeholder="Que recherchez-vous ? (restaurant, coiffeur, garage...)"
-                  class="pl-12 h-14 text-lg border-0 focus:ring-0"
+                  class="pl-12 h-14 text-lg border-0 focus:ring-0 w-full"
+                  color="secondary"
                   :ui="{ 
                     base: 'w-full h-14 text-gray-900 placeholder-gray-500 border-0 focus:ring-0 rounded-xl'
                   }"
@@ -46,12 +47,13 @@
               </div>
               
               <!-- Location search -->
-              <div class="md:w-80 relative">
-                <UIcon name="i-heroicons-map-pin" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <div class="md:w-80 w-full relative">
+                <UIcon name="i-heroicons-map-pin" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
                 <UInput
                   v-model="locationQuery"
                   placeholder="Où ?"
-                  class="pl-12 h-14 text-lg border-0 focus:ring-0"
+                  class="pl-12 h-14 text-lg border-0 focus:ring-0 w-full"
+                  color="secondary"
                   :ui="{ 
                     base: 'w-full h-14 text-gray-900 placeholder-gray-500 border-0 focus:ring-0 rounded-xl'
                   }"

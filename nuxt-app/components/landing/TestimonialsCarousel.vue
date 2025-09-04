@@ -94,7 +94,7 @@
           :key="testimonial.id"
           @click="scrollToIndex(index)"
           class="w-3 h-3 rounded-full transition-colors"
-          :class="currentIndex === index ? 'bg-emerald-500' : 'bg-gray-300'"
+          :class="currentIndex === index ? 'bg-blue-500' : 'bg-gray-300'"
         />
       </div>
     </div>
