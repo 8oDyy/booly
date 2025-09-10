@@ -9,6 +9,7 @@ definePageMeta({
 const user = useSupabaseUser()
 const { business, loading, error, updateBusiness, createBusiness } = useBusinessManagement()
 const { searchBusinesses } = useBusinesses() // Pour les catégories
+const { allTags } = useAllTags() // Pour les tags
 
 const businessSchema = z.object({
   name: z.string().min(2, 'Nom trop court'),
@@ -17,7 +18,7 @@ const businessSchema = z.object({
   city: z.string().min(2, 'Ville requise'),
   postal_code: z.string().min(2, 'Code postal requis'),
   country: z.string().min(2, 'Pays requis'),
-  phone: z.string().optional(),
+  phone: z.string().regex(/^(?:\+33\s[1-9](?:\s\d{2}){4}|0[1-9](?:\s\d{2}){4})$/, 'Numéro de téléphone français invalide').optional().or(z.literal('')),
   website: z.string().url('URL invalide').optional().or(z.literal('')),
   category_id: z.string().optional(),
   price: z.enum(['1', '2', '3', '4']).optional(),
@@ -47,6 +48,25 @@ const toast = useToast()
 const pending = ref(false)
 const categories = ref<any[]>([])
 
+// Variables pour l'autocomplétion des catégories
+const categoryQuery = ref('')
+const showCategorySuggestions = ref(false)
+const selectedCategoryIndex = ref(-1)
+const categoryInput = ref<HTMLInputElement>()
+
+// Variables pour l'autocomplétion des prix
+const priceQuery = ref('')
+const showPriceSuggestions = ref(false)
+const selectedPriceIndex = ref(-1)
+const priceInput = ref<HTMLInputElement>()
+
+// Variables pour la sélection des tags
+const selectedTags = ref<string[]>([])
+const tagQuery = ref('')
+const showTagSuggestions = ref(false)
+const selectedTagIndex = ref(-1)
+const tagInput = ref<HTMLInputElement>()
+
 // Options pour le niveau de prix
 const priceOptions = [
   { label: '$ - Économique', value: '1' },
@@ -55,20 +75,44 @@ const priceOptions = [
   { label: '$$$$ - Très élevé', value: '4' }
 ]
 
-// Charger les catégories
+// Charger les catégories depuis Supabase
 const loadCategories = async () => {
   try {
-    // Catégories statiques pour l'instant
-    categories.value = [
-      { label: 'Restaurant', value: 'restaurant' },
-      { label: 'Bar', value: 'bar' },
-      { label: 'Café', value: 'cafe' },
-      { label: 'Hôtel', value: 'hotel' },
-      { label: 'Commerce', value: 'commerce' },
-      { label: 'Service', value: 'service' }
-    ]
+    const supabase = useSupabaseClient()
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, name')
+      .order('name')
+
+    if (error) {
+      console.error('Erreur lors du chargement des catégories:', error)
+      // Fallback sur des catégories statiques en cas d'erreur
+      categories.value = [
+        { label: 'Restaurant', value: '1' },
+        { label: 'Bar', value: '2' },
+        { label: 'Café', value: '3' },
+        { label: 'Hôtel', value: '4' },
+        { label: 'Commerce', value: '5' },
+        { label: 'Service', value: '6' }
+      ]
+    } else {
+      // Transformer les données Supabase au format attendu par l'autocomplétion
+      categories.value = (data || []).map((category: any) => ({
+        label: category.name,
+        value: category.id.toString()
+      }))
+    }
   } catch (err) {
     console.error('Erreur chargement catégories:', err)
+    // Fallback sur des catégories statiques
+    categories.value = [
+      { label: 'Restaurant', value: '1' },
+      { label: 'Bar', value: '2' },
+      { label: 'Café', value: '3' },
+      { label: 'Hôtel', value: '4' },
+      { label: 'Commerce', value: '5' },
+      { label: 'Service', value: '6' }
+    ]
   }
 }
 
@@ -89,6 +133,224 @@ watch(business, (newBusiness) => {
     businessForm.longitude = newBusiness.longitude || undefined
   }
 }, { immediate: true })
+
+// Computed pour filtrer les catégories
+const filteredCategories = computed(() => {
+  if (!categoryQuery.value) return categories.value
+  return categories.value.filter(category => 
+    category.label.toLowerCase().includes(categoryQuery.value.toLowerCase())
+  )
+})
+
+// Computed pour afficher toutes les options de prix (pas de filtrage)
+const filteredPriceOptions = computed(() => {
+  return priceOptions
+})
+
+// Computed pour filtrer les tags disponibles
+const filteredTags = computed(() => {
+  if (!tagQuery.value) return allTags.value
+  return allTags.value.filter(tag => 
+    tag.name.toLowerCase().includes(tagQuery.value.toLowerCase()) &&
+    !selectedTags.value.includes(tag.id)
+  )
+})
+
+// Fonctions pour l'autocomplétion des catégories
+const handleCategoryInput = () => {
+  selectedCategoryIndex.value = -1
+  showCategorySuggestions.value = true
+}
+
+const handleCategoryKeydown = (event: KeyboardEvent) => {
+  if (!showCategorySuggestions.value || filteredCategories.value.length === 0) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      selectedCategoryIndex.value = Math.min(selectedCategoryIndex.value + 1, filteredCategories.value.length - 1)
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      selectedCategoryIndex.value = Math.max(selectedCategoryIndex.value - 1, -1)
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (selectedCategoryIndex.value >= 0) {
+        selectCategory(filteredCategories.value[selectedCategoryIndex.value])
+      }
+      break
+    case 'Escape':
+      showCategorySuggestions.value = false
+      selectedCategoryIndex.value = -1
+      break
+  }
+}
+
+const selectCategory = (category: any) => {
+  businessForm.category_id = category.value
+  categoryQuery.value = category.label
+  showCategorySuggestions.value = false
+  selectedCategoryIndex.value = -1
+}
+
+const hideCategorySuggestions = () => {
+  setTimeout(() => {
+    showCategorySuggestions.value = false
+    selectedCategoryIndex.value = -1
+  }, 150)
+}
+
+// Fonctions pour la liste déroulante des prix (pas d'autocomplétion)
+const handlePriceInput = () => {
+  // Ne pas filtrer, juste afficher la liste
+  selectedPriceIndex.value = -1
+  showPriceSuggestions.value = true
+}
+
+const handlePriceKeydown = (event: KeyboardEvent) => {
+  if (!showPriceSuggestions.value || filteredPriceOptions.value.length === 0) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      selectedPriceIndex.value = Math.min(selectedPriceIndex.value + 1, filteredPriceOptions.value.length - 1)
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      selectedPriceIndex.value = Math.max(selectedPriceIndex.value - 1, -1)
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (selectedPriceIndex.value >= 0) {
+        selectPrice(filteredPriceOptions.value[selectedPriceIndex.value])
+      }
+      break
+    case 'Escape':
+      showPriceSuggestions.value = false
+      selectedPriceIndex.value = -1
+      break
+  }
+}
+
+const selectPrice = (price: any) => {
+  businessForm.price = price.value
+  priceQuery.value = price.label
+  showPriceSuggestions.value = false
+  selectedPriceIndex.value = -1
+}
+
+const hidePriceSuggestions = () => {
+  setTimeout(() => {
+    showPriceSuggestions.value = false
+    selectedPriceIndex.value = -1
+  }, 150)
+}
+
+// Synchroniser categoryQuery avec la catégorie sélectionnée
+watch(() => businessForm.category_id, (newCategoryId) => {
+  const selectedCategory = categories.value.find(cat => cat.value === newCategoryId)
+  if (selectedCategory) {
+    categoryQuery.value = selectedCategory.label
+  } else {
+    categoryQuery.value = ''
+  }
+})
+
+// Synchroniser priceQuery avec le prix sélectionné
+watch(() => businessForm.price, (newPrice) => {
+  const selectedPrice = priceOptions.find(price => price.value === newPrice)
+  if (selectedPrice) {
+    priceQuery.value = selectedPrice.label
+  } else {
+    priceQuery.value = ''
+  }
+})
+
+// Fonctions pour la sélection des tags
+const handleTagInput = () => {
+  selectedTagIndex.value = -1
+  showTagSuggestions.value = true
+}
+
+const handleTagKeydown = (event: KeyboardEvent) => {
+  if (!showTagSuggestions.value || filteredTags.value.length === 0) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      selectedTagIndex.value = Math.min(selectedTagIndex.value + 1, filteredTags.value.length - 1)
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      selectedTagIndex.value = Math.max(selectedTagIndex.value - 1, -1)
+      break
+    case 'Enter':
+      event.preventDefault()
+      if (selectedTagIndex.value >= 0) {
+        addTag(filteredTags.value[selectedTagIndex.value])
+      }
+      break
+    case 'Escape':
+      showTagSuggestions.value = false
+      selectedTagIndex.value = -1
+      break
+  }
+}
+
+const addTag = (tag: any) => {
+  if (!selectedTags.value.includes(tag.id)) {
+    selectedTags.value.push(tag.id)
+    tagQuery.value = ''
+    showTagSuggestions.value = false
+    selectedTagIndex.value = -1
+  }
+}
+
+const removeTag = (tagId: string) => {
+  selectedTags.value = selectedTags.value.filter(id => id !== tagId)
+}
+
+const hideTagSuggestions = () => {
+  setTimeout(() => {
+    showTagSuggestions.value = false
+    selectedTagIndex.value = -1
+  }, 150)
+}
+
+const getTagName = (tagId: string) => {
+  const tag = allTags.value.find(t => t.id === tagId)
+  return tag?.name || tagId
+}
+
+// Fonction pour formater le numéro de téléphone
+const formatPhoneNumber = (value: string) => {
+  // Supprimer tous les caractères non numériques sauf le +
+  const cleaned = value.replace(/[^\d+]/g, '')
+  
+  // Si commence par +33
+  if (cleaned.startsWith('+33')) {
+    const number = cleaned.slice(3)
+    if (number.length <= 9) {
+      return '+33 ' + number.replace(/(\d{1})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5').trim()
+    }
+  }
+  // Si commence par 0
+  else if (cleaned.startsWith('0')) {
+    if (cleaned.length <= 10) {
+      return cleaned.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5').trim()
+    }
+  }
+  
+  return cleaned
+}
+
+// Gérer la saisie du téléphone avec formatage
+const handlePhoneInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const formatted = formatPhoneNumber(target.value)
+  businessForm.phone = formatted
+}
 
 // Charger les catégories au montage
 onMounted(() => {
@@ -246,12 +508,44 @@ function onPhotoUpload() {
         description="Le type d'établissement."
         class="flex max-sm:flex-col justify-between items-start gap-4"
       >
-        <USelect
-          v-model="businessForm.category_id"
-          :options="categories"
-          :disabled="loading"
-          placeholder="Sélectionnez une catégorie"
-        />
+        <div class="relative w-full">
+          <input
+            ref="categoryInput"
+            v-model="categoryQuery"
+            @input="handleCategoryInput"
+            @keydown="handleCategoryKeydown"
+            @focus="showCategorySuggestions = true"
+            @blur="hideCategorySuggestions"
+            :disabled="loading"
+            placeholder="Sélectionnez une catégorie"
+            class="w-full h-9 px-3 pr-10 text-sm text-gray-900 placeholder-gray-500 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          />
+          
+          <!-- Icône dropdown -->
+          <UIcon 
+            name="i-heroicons-chevron-down" 
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none"
+          />
+          
+          <!-- Dropdown des suggestions de catégories -->
+          <div 
+            v-if="showCategorySuggestions && filteredCategories.length > 0"
+            class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+          >
+            <div
+              v-for="(category, index) in filteredCategories"
+              :key="category.value"
+              :class="[
+                'px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2',
+                { 'bg-blue-50 dark:bg-blue-900/30': index === selectedCategoryIndex }
+              ]"
+              @mousedown.prevent="selectCategory(category)"
+            >
+              <UIcon name="i-heroicons-tag" class="w-4 h-4 text-gray-400" />
+              <span class="text-sm">{{ category.label }}</span>
+            </div>
+          </div>
+        </div>
       </UFormField>
 
       <USeparator />
@@ -262,17 +556,47 @@ function onPhotoUpload() {
         description="Gamme de prix de votre établissement."
         class="flex max-sm:flex-col justify-between items-start gap-4"
       >
-        <USelect
-          v-model="businessForm.price"
-          :options="priceOptions"
-          :disabled="loading"
-          placeholder="Sélectionnez un niveau"
-        />
+        <div class="relative w-full">
+          <input
+            ref="priceInput"
+            v-model="priceQuery"
+            @input="handlePriceInput"
+            @keydown="handlePriceKeydown"
+            @focus="showPriceSuggestions = true"
+            @blur="hidePriceSuggestions"
+            :disabled="loading"
+            placeholder="Sélectionnez un niveau de prix"
+            class="w-full h-9 px-3 pr-10 text-sm text-gray-900 placeholder-gray-500 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          />
+          
+          <!-- Icône dropdown -->
+          <UIcon 
+            name="i-heroicons-chevron-down" 
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none"
+          />
+          
+          <!-- Dropdown des options de prix -->
+          <div 
+            v-if="showPriceSuggestions"
+            class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+          >
+            <div
+              v-for="(price, index) in filteredPriceOptions"
+              :key="price.value"
+              :class="[
+                'px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2',
+                { 'bg-blue-50 dark:bg-blue-900/30': index === selectedPriceIndex }
+              ]"
+              @mousedown.prevent="selectPrice(price)"
+            >
+              <span class="text-sm">{{ price.label }}</span>
+            </div>
+          </div>
+        </div>
       </UFormField>
 
       <USeparator />
 
-      <!-- Contact -->
       <UFormField
         name="phone"
         label="Téléphone"
@@ -281,10 +605,86 @@ function onPhotoUpload() {
       >
         <UInput
           v-model="businessForm.phone"
+          @input="handlePhoneInput"
           autocomplete="off"
           :disabled="loading"
-          placeholder="+33 1 23 45 67 89"
+          placeholder="Ex: 01 23 45 67 89 ou +33 1 23 45 67 89"
+          class="w-full"
+          color="secondary"
         />
+      </UFormField>
+
+      <USeparator />
+
+      <!-- Tags -->
+      <UFormField
+        name="tags"
+        label="Tags"
+        description="Mots-clés pour décrire votre établissement (terrasse, WiFi, parking, etc.)"
+        class="flex max-sm:flex-col justify-between items-start gap-4"
+      >
+        <div class="w-full space-y-3">
+          <!-- Tags sélectionnés -->
+          <div v-if="selectedTags.length > 0" class="flex flex-wrap gap-2">
+            <UBadge
+              v-for="tagId in selectedTags"
+              :key="tagId"
+              color="secondary"
+              variant="subtle"
+              class="flex items-center gap-1"
+            >
+              {{ getTagName(tagId) }}
+              <UButton
+                icon="i-heroicons-x-mark"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="removeTag(tagId)"
+                class="ml-1 -mr-1"
+              />
+            </UBadge>
+          </div>
+          
+          <!-- Input pour ajouter des tags -->
+          <div class="relative">
+            <input
+              ref="tagInput"
+              v-model="tagQuery"
+              @input="handleTagInput"
+              @keydown="handleTagKeydown"
+              @focus="showTagSuggestions = true"
+              @blur="hideTagSuggestions"
+              :disabled="loading"
+              placeholder="Rechercher et ajouter des tags..."
+              class="w-full h-9 px-3 pr-10 text-sm text-gray-900 placeholder-gray-500 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+            />
+            
+            <!-- Icône dropdown -->
+            <UIcon 
+              name="i-heroicons-chevron-down" 
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none"
+            />
+            
+            <!-- Dropdown des suggestions de tags -->
+            <div 
+              v-if="showTagSuggestions && filteredTags.length > 0"
+              class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+            >
+              <div
+                v-for="(tag, index) in filteredTags"
+                :key="tag.id"
+                :class="[
+                  'px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2',
+                  { 'bg-blue-50 dark:bg-blue-900/30': index === selectedTagIndex }
+                ]"
+                @mousedown.prevent="addTag(tag)"
+              >
+                <UIcon name="i-heroicons-hashtag" class="w-4 h-4 text-gray-400" />
+                <span class="text-sm">{{ tag.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </UFormField>
 
       <USeparator />

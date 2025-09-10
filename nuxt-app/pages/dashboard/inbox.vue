@@ -137,7 +137,6 @@ watch(filteredReviews, () => {
     <!-- Liste des avis -->
     <ReviewsList 
       v-model="selectedReview" 
-      color="secondary"
       :reviews="filteredReviews" 
       :pending="pending"
       :error="error"
