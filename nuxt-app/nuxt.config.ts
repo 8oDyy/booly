@@ -53,7 +53,7 @@ export default defineNuxtConfig({
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com",
             "style-src  'self' 'unsafe-inline'",
-            "img-src    'self' data: blob: https://maps.gstatic.com https://maps.googleapis.com https://via.placeholder.com",
+            "img-src    'self' data: blob: *",
             "connect-src 'self' https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com https://api.iconify.design"
           ].join('; ')
         }

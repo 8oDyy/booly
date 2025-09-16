@@ -138,7 +138,20 @@
 </template>
 
 <script setup lang="ts">
-const { hasActiveSubscription } = useSubscription()
+const { hasActiveSubscription, subscription, currentPlan } = useSubscription()
+
+// Debug logs pour diagnostiquer le problème
+watch(hasActiveSubscription, (newValue) => {
+  console.log('🔍 HeaderActions - hasActiveSubscription changed:', newValue)
+}, { immediate: true })
+
+watch(subscription, (newValue) => {
+  console.log('🔍 HeaderActions - subscription changed:', newValue)
+}, { immediate: true })
+
+watch(currentPlan, (newValue) => {
+  console.log('🔍 HeaderActions - currentPlan changed:', newValue)
+}, { immediate: true })
 
 interface Props {
   user: any

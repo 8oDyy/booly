@@ -136,6 +136,94 @@
               </template>
             </UFormField>
 
+            <!-- Photos Upload -->
+            <UFormField name="photos">
+              <template #label>
+                <span class="text-lg font-semibold text-gray-900">Ajoutez des photos (optionnel)</span>
+              </template>
+              <div class="space-y-4">
+                <!-- Upload Area -->
+                <div 
+                  class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors cursor-pointer"
+                  @click="triggerFileInput"
+                  @dragover.prevent="isDragOver = true"
+                  @dragleave.prevent="isDragOver = false"
+                  @drop.prevent="handleFileDrop"
+                  :class="{ 'border-primary-400 bg-primary-50': isDragOver }"
+                >
+                  <input
+                    ref="fileInput"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    @change="handleFileSelect"
+                    class="hidden"
+                  />
+                  <div class="space-y-3">
+                    <div class="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                      <UIcon name="i-heroicons-camera" class="w-8 h-8 text-gray-500" />
+                    </div>
+                    <div>
+                      <p class="text-lg font-medium text-gray-900">Ajoutez des photos de votre visite</p>
+                      <p class="text-sm text-gray-500 mt-1">
+                        Glissez-déposez vos images ou cliquez pour sélectionner
+                      </p>
+                      <p class="text-xs text-gray-400 mt-2">
+                        JPG, PNG, WebP • Max 5 photos • 10 Mo par photo
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Photo Previews -->
+                <div v-if="selectedPhotos.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div
+                    v-for="(photo, index) in selectedPhotos"
+                    :key="index"
+                    class="relative group"
+                  >
+                    <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
+                      <img
+                        :src="photo.preview"
+                        :alt="`Photo ${index + 1}`"
+                        class="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      @click="removePhoto(index)"
+                      class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    >
+                      <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+                    </button>
+                    <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {{ formatFileSize(photo.file.size) }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div v-if="uploadingPhotos" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div class="flex items-center space-x-3">
+                    <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 text-blue-500 animate-spin" />
+                    <div class="flex-1">
+                      <p class="text-sm font-medium text-blue-900">Upload des photos en cours...</p>
+                      <div class="w-full bg-blue-200 rounded-full h-2 mt-2">
+                        <div 
+                          class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                          :style="{ width: `${uploadProgress}%` }"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <template #hint>
+                <span class="text-sm text-gray-600">
+                  📸 Les photos aident les autres clients à mieux connaître l'établissement
+                </span>
+              </template>
+            </UFormField>
+
             <!-- Submit Button -->
             <div class="pt-6 border-t border-gray-100">
               <div class="flex flex-col sm:flex-row gap-4">
@@ -207,6 +295,7 @@ definePageMeta({
 const route = useRoute()
 const user = useSupabaseUser()
 const supabase = useSupabaseClient<Database>()
+const { createPhoto } = usePhotos()
 
 // Reactive data
 const loading = ref(true)
@@ -223,6 +312,17 @@ const reviewForm = reactive({
 
 const hoverRating = ref(0)
 
+// Photo upload state
+const selectedPhotos = ref<Array<{ file: File; preview: string }>>([])
+const uploadingPhotos = ref(false)
+const uploadProgress = ref(0)
+const isDragOver = ref(false)
+const fileInput = ref<HTMLInputElement>()
+
+// Photo upload constants
+const MAX_PHOTOS = 5
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
 // Rating labels
 const ratingLabels: Record<number, string> = {
   1: 'Très décevant',
@@ -237,6 +337,79 @@ const isFormValid = computed(() => {
   return reviewForm.rating > 0 && 
          reviewForm.content.trim().length >= 10
 })
+
+// Photo upload functions
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const validateFile = (file: File): string | null => {
+  if (!file.type.startsWith('image/')) {
+    return 'Seuls les fichiers image sont acceptés'
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return 'La taille du fichier ne doit pas dépasser 10 Mo'
+  }
+  return null
+}
+
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = Array.from(target.files || [])
+  processFiles(files)
+}
+
+const handleFileDrop = (event: DragEvent) => {
+  isDragOver.value = false
+  const files = Array.from(event.dataTransfer?.files || [])
+  processFiles(files)
+}
+
+const processFiles = (files: File[]) => {
+  const remainingSlots = MAX_PHOTOS - selectedPhotos.value.length
+  const filesToProcess = files.slice(0, remainingSlots)
+  
+  filesToProcess.forEach(file => {
+    const error = validateFile(file)
+    if (error) {
+      const toast = useToast()
+      toast.add({
+        title: 'Fichier invalide',
+        description: `${file.name}: ${error}`,
+        icon: 'i-heroicons-exclamation-triangle',
+        color: 'error'
+      })
+      return
+    }
+    
+    const preview = URL.createObjectURL(file)
+    selectedPhotos.value.push({ file, preview })
+  })
+  
+  if (files.length > remainingSlots) {
+    const toast = useToast()
+    toast.add({
+      title: 'Limite atteinte',
+      description: `Maximum ${MAX_PHOTOS} photos autorisées`,
+      icon: 'i-heroicons-information-circle',
+      color: 'warning'
+    })
+  }
+}
+
+const removePhoto = (index: number) => {
+  const photo = selectedPhotos.value[index]
+  URL.revokeObjectURL(photo.preview)
+  selectedPhotos.value.splice(index, 1)
+}
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
 
 // Valider le check et récupérer les infos de l'établissement via l'API serveur
 const validateCheckAndGetBusiness = async (checkId: string) => {
@@ -330,9 +503,45 @@ const onSubmitReview = async () => {
   submitting.value = true
 
   try {
+    // Créer l'avis d'abord
     const result = await createReview()
 
-    if (result.success) {
+    if (result.success && result.reviewId) {
+      // Upload des photos si il y en a
+      if (selectedPhotos.value.length > 0) {
+        uploadingPhotos.value = true
+        
+        try {
+          for (let i = 0; i < selectedPhotos.value.length; i++) {
+            const photo = selectedPhotos.value[i]
+            uploadProgress.value = ((i + 1) / selectedPhotos.value.length) * 100
+            
+            await createPhoto({
+              businessId: business.value.id,
+              photoType: 'review_photo',
+              reviewId: result.reviewId,
+              file: photo.file,
+              description: `Photo d'avis ${i + 1}`
+            })
+          }
+          
+          console.log('✅ Toutes les photos ont été uploadées')
+        } catch (photoError) {
+          console.error('❌ Erreur upload photos:', photoError)
+          // On continue même si l'upload des photos échoue
+          const toast = useToast()
+          toast.add({
+            title: 'Avis créé, photos partiellement uploadées',
+            description: 'Votre avis a été publié mais certaines photos n\'ont pas pu être ajoutées.',
+            icon: 'i-heroicons-exclamation-triangle',
+            color: 'warning'
+          })
+        } finally {
+          uploadingPhotos.value = false
+          uploadProgress.value = 0
+        }
+      }
+
       // Afficher un toast de succès
       const toast = useToast()
       toast.add({
@@ -342,9 +551,11 @@ const onSubmitReview = async () => {
         color: 'success'
       })
       
-      // Reset form
+      // Reset form et photos
       reviewForm.rating = 0
       reviewForm.content = ''
+      selectedPhotos.value.forEach(photo => URL.revokeObjectURL(photo.preview))
+      selectedPhotos.value = []
       
       // Redirection automatique vers la page principale après 2 secondes
       setTimeout(() => {

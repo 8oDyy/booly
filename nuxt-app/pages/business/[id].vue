@@ -10,7 +10,7 @@
         <main class="max-w-6xl mx-auto px-4 py-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
-                    <UTabs :items="tabs" v-model="activeTab">
+                    <UTabs :items="tabs" v-model="activeTab" color="secondary">
                         <template #overview>
                             <section v-show="activeTab === 'overview'" class="space-y-8">
                                 <BusinessOverview v-if="business" :business="business" />
@@ -23,7 +23,10 @@
                         </template>
                         <template #photos>
                             <section v-show="activeTab === 'photos'" class="space-y-6">
-                                <BusinessPhotos v-if="business" :photos="business.photos || []" />
+                                <div class="text-center text-gray-500 py-12">
+                                    <p class="text-lg">Photos de l'établissement</p>
+                                    <p class="text-sm mt-2">Les photos sont affichées dans l'en-tête de la page</p>
+                                </div>
                             </section>
                         </template>
                     </UTabs>
@@ -32,12 +35,12 @@
                     <BusinessSideBar :business="business" />
                 </div>
             </div>
-            <BusinessSimilar :base="{
-                id: business?.id,
-                category_id: business?.category_id,
-                latitude: business?.latitude,
-                longitude: business?.longitude,
-                city: business?.city
+            <BusinessSimilar v-if="business" :base="{
+                id: business.id,
+                category_id: business.category_id,
+                latitude: business.latitude,
+                longitude: business.longitude,
+                city: business.city
             }" />
         </main>
   </div>

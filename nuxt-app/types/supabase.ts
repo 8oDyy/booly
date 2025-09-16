@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -325,6 +325,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          photo_type: Database["public"]["Enums"]["photo_type"]
           review_id: string | null
           url: string
           user_id: string
@@ -334,6 +335,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          photo_type?: Database["public"]["Enums"]["photo_type"]
           review_id?: string | null
           url: string
           user_id: string
@@ -343,6 +345,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          photo_type?: Database["public"]["Enums"]["photo_type"]
           review_id?: string | null
           url?: string
           user_id?: string
@@ -723,6 +726,7 @@ export type Database = {
       }
     }
     Enums: {
+      photo_type: "business_gallery" | "review_photo"
       price_level: "4" | "1" | "2" | "3"
       tag_status: "active" | "inactive" | "replaced"
       tag_type: "QR" | "NFC"
@@ -853,6 +857,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      photo_type: ["business_gallery", "review_photo"],
       price_level: ["4", "1", "2", "3"],
       tag_status: ["active", "inactive", "replaced"],
       tag_type: ["QR", "NFC"],

@@ -20,12 +20,12 @@ export const useSubscription = () => {
     premium: config.public.stripePricePremium
   })
   
-  // Plans disponibles - Price IDs de VOTRE compte Stripe
+  // Plans disponibles - Price IDs depuis la config runtime
   const plans = {
     basic: {
       name: 'Plan Basic',
       price: 19.99,
-      priceId: 'price_1RuwCXLgo7pFtFvcYRf2qNXO', // Price ID créé dans votre compte Stripe
+      priceId: config.public.stripePriceBasic || 'price_1Ruw5QPvvWh23t2rT5pMi300',
       features: [
         'Gestion d\'un établissement',
         'Avis clients illimités',
@@ -36,7 +36,7 @@ export const useSubscription = () => {
     premium: {
       name: 'Plan Premium',
       price: 29.99,
-      priceId: 'price_1RuwClLgo7pFtFvcYNDgjADz', // Price ID créé dans votre compte Stripe
+      priceId: config.public.stripePricePremium || 'price_1Ruw0DPvvWh23t2rhadOxcZ9',
       features: [
         'Gestion de 5 établissements',
         'Avis clients illimités',
@@ -97,16 +97,33 @@ export const useSubscription = () => {
    * Vérifier si l'utilisateur a un abonnement actif
    */
   const hasActiveSubscription = computed(() => {
-    if (!subscription.value) return false
+    console.log('🔍 useSubscription - Checking hasActiveSubscription:', {
+      subscription: subscription.value,
+      user: user.value?.id
+    })
+    
+    if (!subscription.value) {
+      console.log('❌ useSubscription - No subscription found')
+      return false
+    }
     
     const now = new Date()
     const periodEnd = subscription.value.current_period_end 
       ? new Date(subscription.value.current_period_end) 
       : null
 
-    return subscription.value.status === 'active' && 
-           periodEnd && 
-           periodEnd > now
+    const isActive = subscription.value.status === 'active' && 
+                     periodEnd && 
+                     periodEnd > now
+                     
+    console.log('🔍 useSubscription - Subscription check:', {
+      status: subscription.value.status,
+      periodEnd: periodEnd,
+      now: now,
+      isActive: isActive
+    })
+
+    return isActive
   })
 
   /**

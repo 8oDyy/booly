@@ -1,73 +1,205 @@
 <template>
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div class="flex items-center gap-4">
-                <select
-                v-model="reviewFilter"
-                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="all">Tous les avis</option>
-                    <option value="5">5 étoiles</option>
-                    <option value="4">4 étoiles</option>
-                    <option value="3">3 étoiles</option>
-                    <option value="2">2 étoiles</option>
-                    <option value="1">1 étoile</option>
-                </select>
-                
-                <select
-                v-model="reviewSort"
-                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                <option value="recent">Plus récents</option>
-                <option value="oldest">Plus anciens</option>
-                <option value="highest">Meilleures notes</option>
-                <option value="lowest">Notes les plus basses</option>
-                </select>
+  <div class="space-y-6">
+    <!-- Header avec filtres -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Avis clients</h3>
+        <div class="flex flex-wrap items-center gap-3">
+          <USelect
+            v-model="reviewFilter"
+            :options="filterOptions"
+            placeholder="Filtrer par note"
+            size="sm"
+            class="min-w-[140px]"
+          />
+          <USelect
+            v-model="reviewSort"
+            :options="sortOptions"
+            placeholder="Trier par"
+            size="sm"
+            class="min-w-[140px]"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div v-if="!paginatedReviews.length" class="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+      <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+        <Icon name="i-heroicons-chat-bubble-left-ellipsis" class="w-8 h-8 text-gray-400" />
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun avis pour le moment</h3>
+      <p class="text-gray-500">Soyez le premier à laisser un avis sur cet établissement.</p>
+    </div>
+
+    <!-- Liste des avis -->
+    <div v-else class="space-y-4">
+      <div 
+        v-for="(review, idx) in paginatedReviews" 
+        :key="reviewKey(review, idx)" 
+        class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+      >
+        <div class="flex gap-4">
+          <!-- Avatar -->
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+              {{ initials(review.profiles?.full_name) }}
             </div>
+          </div>
+          
+          <!-- Contenu de l'avis -->
+          <div class="flex-1 min-w-0">
+            <!-- Header de l'avis -->
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-gray-900 text-base">
+                  {{ review.profiles?.full_name || 'Utilisateur anonyme' }}
+                </h4>
+                <div class="flex items-center gap-2 mt-1">
+                  <!-- Étoiles -->
+                  <div class="flex items-center">
+                    <Icon 
+                      v-for="i in 5" 
+                      :key="i"
+                      :name="i <= Math.round(Number(review.rating) || 0) ? 'i-heroicons-star-solid' : 'i-heroicons-star'"
+                      :class="i <= Math.round(Number(review.rating) || 0) ? 'text-yellow-400' : 'text-gray-300'"
+                      class="w-4 h-4"
+                    />
+                  </div>
+                  <span class="text-sm font-medium text-gray-700">{{ Number(review.rating).toFixed(1) }}</span>
+                </div>
+              </div>
+              <time class="text-sm text-gray-500 flex-shrink-0">
+                {{ formatDate(review.created_at) }}
+              </time>
+            </div>
+            
+            <!-- Contenu textuel -->
+            <div v-if="review.content" class="mb-4">
+              <p class="text-gray-700 leading-relaxed whitespace-pre-line">
+                {{ review.content }}
+              </p>
+            </div>
+            
+            <!-- Photos de l'avis -->
+            <div v-if="review.id && reviewPhotos[review.id]?.length" class="mb-4">
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                <div 
+                  v-for="(photo, photoIdx) in reviewPhotos[review.id].slice(0, 4)" 
+                  :key="photo.id"
+                  class="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                  @click="openPhotoModal(reviewPhotos[review.id], photoIdx)"
+                >
+                  <NuxtImg
+                    :src="photo.url"
+                    :alt="photo.description || `Photo ${photoIdx + 1}`"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <!-- Overlay pour plus de photos -->
+                  <div 
+                    v-if="photoIdx === 3 && reviewPhotos[review.id].length > 4"
+                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                  >
+                    <span class="text-white font-semibold text-sm">
+                      +{{ reviewPhotos[review.id].length - 4 }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex items-center gap-6 text-sm">
+              <button class="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors">
+                <Icon name="i-heroicons-hand-thumb-up" class="w-4 h-4" />
+                <span>Utile</span>
+              </button>
+              <button class="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors">
+                <Icon name="i-heroicons-share" class="w-4 h-4" />
+                <span>Partager</span>
+              </button>
+              <button class="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors">
+                <Icon name="i-heroicons-flag" class="w-4 h-4" />
+                <span>Signaler</span>
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-
-    <div v-if="!paginatedReviews.length" class="p-6 text-gray-500 text-sm">Aucun avis pour le moment.</div>
-
-    <ul v-else class="divide-y">
-      <li v-for="(r, idx) in paginatedReviews" :key="reviewKey(r, idx)" class="p-4 flex gap-3">
-        <div class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
-          <span class="text-sm">{{ initials(r.profiles?.full_name) }}</span>
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-medium text-gray-900">
-              {{ r.profiles?.full_name || 'Utilisateur' }}
-            </p>
-            <p class="text-xs text-gray-500">{{ formatDate(r.created_at) }}</p>
-          </div>
-          <div class="mt-1 text-yellow-500 text-sm">
-            <span v-for="i in 5" :key="i">{{ i <= Math.round(Number(r.rating) || 0) ? '★' : '☆' }}</span>
-            <span class="ml-2 text-gray-700">{{ Number(r.rating).toFixed(1) }}</span>
-          </div>
-          <p v-if="r.content" class="mt-2 text-gray-700 whitespace-pre-line">
-            {{ r.content }}
-          </p>
-          <div class="mt-3 flex items-center gap-4 text-xs text-gray-500">
-            <button class="hover:text-blue-600">Utile</button>
-            <button class="hover:text-blue-600">Partager</button>
-            <button class="hover:text-blue-600">Signaler</button>
-          </div>
-        </div>
-      </li>
-    </ul>
-    <div v-if="paginatedReviews.length < filteredSorted.length" class="p-4 border-t">
-      <button @click="loadMore" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-        Charger plus d'avis
-      </button>
+    
+    <!-- Bouton charger plus -->
+    <div v-if="paginatedReviews.length < filteredSorted.length" class="text-center">
+      <UButton 
+        @click="loadMore" 
+        variant="outline" 
+        size="lg"
+        class="px-8"
+      >
+        Charger plus d'avis ({{ filteredSorted.length - paginatedReviews.length }} restants)
+      </UButton>
     </div>
+  </div>
+  
+  <!-- Modal pour les photos -->
+  <UModal v-model="photoModalOpen" class="max-w-4xl">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Photos de l'avis</h3>
+        <UButton 
+          @click="photoModalOpen = false" 
+          variant="ghost" 
+          icon="i-heroicons-x-mark"
+          size="sm"
+        />
+      </div>
+      <div v-if="selectedPhotos.length" class="space-y-4">
+        <div class="relative">
+          <NuxtImg
+            :src="selectedPhotos[currentPhotoIndex].url"
+            :alt="selectedPhotos[currentPhotoIndex].description || 'Photo'"
+            class="w-full max-h-96 object-contain rounded-lg"
+          />
+        </div>
+        <div v-if="selectedPhotos.length > 1" class="flex items-center justify-between">
+          <UButton 
+            @click="previousPhoto" 
+            variant="outline" 
+            icon="i-heroicons-chevron-left"
+            :disabled="currentPhotoIndex === 0"
+          >
+            Précédent
+          </UButton>
+          <span class="text-sm text-gray-500">
+            {{ currentPhotoIndex + 1 }} / {{ selectedPhotos.length }}
+          </span>
+          <UButton 
+            @click="nextPhoto" 
+            variant="outline" 
+            icon="i-heroicons-chevron-right"
+            :disabled="currentPhotoIndex === selectedPhotos.length - 1"
+          >
+            Suivant
+          </UButton>
+        </div>
+      </div>
+    </div>
+  </UModal>
   
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
+import type { Database } from '~/types/supabase'
 
-interface Profile { full_name: string | null }
+type Photo = Database['public']['Tables']['photos']['Row']
+
+interface Profile { 
+  full_name: string | null 
+  avatar_url?: string | null
+}
+
 interface ReviewItem {
   id?: string
   rating: number
@@ -76,10 +208,37 @@ interface ReviewItem {
   profiles?: Profile
 }
 
-const props = defineProps<{ reviews: ReviewItem[] | null | undefined }>()
+const props = defineProps<{ 
+  reviews: ReviewItem[] | null | undefined
+  businessId?: string
+}>()
 
+const { getPhotos } = usePhotos()
+
+// États réactifs
 const reviewFilter = ref<'all' | '1' | '2' | '3' | '4' | '5'>('all')
 const reviewSort = ref<'recent' | 'oldest' | 'highest' | 'lowest'>('recent')
+const reviewPhotos = ref<Record<string, Photo[]>>({})
+const photoModalOpen = ref(false)
+const selectedPhotos = ref<Photo[]>([])
+const currentPhotoIndex = ref(0)
+
+// Options pour les selects
+const filterOptions = [
+  { label: 'Tous les avis', value: 'all' },
+  { label: '5 étoiles', value: '5' },
+  { label: '4 étoiles', value: '4' },
+  { label: '3 étoiles', value: '3' },
+  { label: '2 étoiles', value: '2' },
+  { label: '1 étoile', value: '1' }
+]
+
+const sortOptions = [
+  { label: 'Plus récents', value: 'recent' },
+  { label: 'Plus anciens', value: 'oldest' },
+  { label: 'Meilleures notes', value: 'highest' },
+  { label: 'Notes les plus basses', value: 'lowest' }
+]
 
 const filteredSorted = computed(() => {
   let list = [...(props.reviews ?? [])]
@@ -125,9 +284,74 @@ const initials = (name?: string | null) => {
 const formatDate = (iso?: string | null) => {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleDateString()
+    const date = new Date(iso)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 1) return 'Hier'
+    if (diffDays < 7) return `Il y a ${diffDays} jours`
+    if (diffDays < 30) return `Il y a ${Math.ceil(diffDays / 7)} semaines`
+    
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
   } catch {
     return ''
   }
 }
+
+// Fonctions pour les photos
+const loadReviewPhotos = async () => {
+  if (!props.reviews?.length) return
+  
+  const photosMap: Record<string, Photo[]> = {}
+  
+  for (const review of props.reviews) {
+    if (review.id) {
+      try {
+        const photos = await getPhotos({
+          reviewId: review.id,
+          photoType: 'review_photo'
+        })
+        if (photos.length > 0) {
+          photosMap[review.id] = photos
+        }
+      } catch (error) {
+        console.error('Erreur chargement photos avis:', error)
+      }
+    }
+  }
+  
+  reviewPhotos.value = photosMap
+}
+
+const openPhotoModal = (photos: Photo[], startIndex: number = 0) => {
+  selectedPhotos.value = photos
+  currentPhotoIndex.value = startIndex
+  photoModalOpen.value = true
+}
+
+const nextPhoto = () => {
+  if (currentPhotoIndex.value < selectedPhotos.value.length - 1) {
+    currentPhotoIndex.value++
+  }
+}
+
+const previousPhoto = () => {
+  if (currentPhotoIndex.value > 0) {
+    currentPhotoIndex.value--
+  }
+}
+
+// Charger les photos au montage et quand les avis changent
+onMounted(() => {
+  loadReviewPhotos()
+})
+
+watch(() => props.reviews, () => {
+  loadReviewPhotos()
+}, { deep: true })
 </script>
